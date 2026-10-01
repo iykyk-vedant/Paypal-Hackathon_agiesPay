@@ -118,3 +118,202 @@ class ActuatorService:
                         data = result
 
                     if isinstance(data, str):
+                        try:
+                            data = json.loads(data)
+                        except json.JSONDecodeError as error:
+                            logger.error(
+                                "Failed to parse JSON response from genai-toolbox: %s",
+                                str(error),
+                            )
+                            return {"error": "invalid_response", "details": str(error)}
+
+                    return data if isinstance(data, dict) else {"result": data}
+                if isinstance(result, list):
+                    return {"result": result}
+
+                logger.warning("Unexpected response format from genai-toolbox: %s", result)
+                return {"error": "unexpected_response", "details": result}
+
+            logger.error(
+                "genai-toolbox HTTP error: %s - %s",
+                response.status_code,
+                response.text,
+            )
+            try:
+                error_body = response.json()
+            except ValueError:
+                error_body = {"message": response.text}
+            return {"error": "http_error", "details": error_body}
+        except requests.RequestException as error:
+            logger.error("Error calling genai-toolbox API: %s", str(error))
+            return {"error": "request_failed", "details": str(error)}
+
+    async def execute_action(self, command_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute an action using GenAI Toolbox tools."""
+        action = command_data.get("action")
+        logger.info("Received request to execute action: %s", action)
+
+        if not action:
+            logger.error("Missing 'action' in command data.")
+            return {"status": "error", "message": "Missing 'action' in command"}
+
+        if action == "lock_account":
+            account_id = _extract_account_id(command_data)
+            if not account_id:
+                logger.error("Missing 'account_id' for lock_account action.")
+                return {
+                    "status": "error",
+                    "message": "Missing 'account_id' for lock_account action",
+                }
+
+            ext_user_id = _strip_str(command_data.get("ext_user_id"))
+
+            logger.info("Executing lock_account tool for account_id: %s", account_id)
+            response = await asyncio.to_thread(
+                self.call_genai_toolbox_api,
+                "lock_account",
+                {"account_id": account_id},
+            )
+
+            if isinstance(response, dict) and response.get("error"):
+                logger.error(
+                    "Error executing lock_account for account_id %s: %s",
+                    account_id,
+                    response,
+                )
+                return {
+                    "status": "error",
+                    "message": "Failed to lock account",
+                    "details": response,
+                }
+
+            logger.info("Successfully locked account for account_id: %s", account_id)
+            return {
+                "status": "success",
+                "action": action,
+                "account_id": account_id,
+                "ext_user_id": ext_user_id,
+                "response": response,
+            }
+
+        logger.warning("Unknown action received: %s", action)
+        return {"status": "error", "message": f"Unknown action: {action}"}
+
+
+@app.post("/a2a/send-message")
+async def handle_a2a_message(request: SendMessageRequest) -> SendMessageResponse:
+    """Handle incoming A2A messages from other agents."""
+    global actuator_service
+
+    if actuator_service is None:
+        raise HTTPException(status_code=500, detail="Actuator service not initialized")
+
+    try:
+        message_text = ""
+        if hasattr(request, "params") and request.params:
+            if hasattr(request.params, "message") and request.params.message:
+                if hasattr(request.params.message, "parts") and request.params.message.parts:
+                    for part in request.params.message.parts:
+                        if hasattr(part, "root") and hasattr(part.root, "text"):
+                            message_text = part.root.text
+                            break
+
+        logger.info("Received A2A message: %s", message_text)
+
+        if "execute_action:" in message_text or "action" in message_text:
+            try:
+                if "execute_action:" in message_text:
+                    command_json = message_text.replace("execute_action: ", "", 1)
+                else:
+                    command_json = message_text
+
+                command_data = json.loads(command_json)
+            except json.JSONDecodeError as error:
+                logger.error("Failed to parse command data from message: %s", str(error))
+                response_text = TextPart(text=f"Error: Failed to parse command data - {str(error)}")
+                response_message = Message(
+                    message_id=str(uuid.uuid4()),
+                    role=Role.agent,
+                    parts=[response_text],
+                )
+                success_response = SendMessageSuccessResponse(
+                    id=request.id,
+                    result=response_message,
+                )
+                return SendMessageResponse(root=success_response)
+
+            result = await actuator_service.execute_action(command_data)
+            response_text = TextPart(text=f"Action executed: {json.dumps(result)}")
+            response_message = Message(
+                message_id=str(uuid.uuid4()),
+                role=Role.agent,
+                parts=[response_text],
+            )
+            success_response = SendMessageSuccessResponse(
+                id=request.id,
+                result=response_message,
+            )
+            return SendMessageResponse(root=success_response)
+
+        response_text = TextPart(text="Message received but not recognized as actuator command")
+        response_message = Message(
+            message_id=str(uuid.uuid4()),
+            role=Role.agent,
+            parts=[response_text],
+        )
+        success_response = SendMessageSuccessResponse(
+            id=request.id,
+            result=response_message,
+        )
+        return SendMessageResponse(root=success_response)
+
+    except Exception as error:
+        logger.error("Error processing A2A message: %s", str(error), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(error)}")
+
+
+@app.post("/")
+async def handle_root_a2a_message(request: SendMessageRequest) -> SendMessageResponse:
+    """Handle A2A messages at root endpoint."""
+    return await handle_a2a_message(request)
+
+
+@app.post("/execute")
+async def execute_endpoint(command_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Direct REST endpoint for execute requests."""
+    global actuator_service
+
+    if actuator_service is None:
+        raise HTTPException(status_code=500, detail="Actuator service not initialized")
+
+    try:
+        result = await actuator_service.execute_action(command_data)
+        return result
+    except Exception as error:
+        logger.error("Error in execute endpoint: %s", str(error), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Execution failed: {str(error)}")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy", "service": "actuator_agent"}
+
+
+def main():
+    """Entry point for the agent."""
+    logger.info("Starting ActuatorAgent...")
+    try:
+        global actuator_service
+        actuator_service = ActuatorService()
+        logger.info("ActuatorAgent service created successfully")
+
+        logger.info("Starting A2A server on port 8000...")
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+
+    except Exception as error:
+        logger.fatal("Failed to start ActuatorAgent: %s", str(error), exc_info=True)
+
+
+if __name__ == "__main__":
+    main()
