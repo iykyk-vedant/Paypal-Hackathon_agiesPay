@@ -1,0 +1,15 @@
+sources:
+  accounts-db:
+    kind: postgres
+    host: accounts-db
+    port: 5432
+    database: accounts-db
+    user: accounts-admin
+    password: accounts-pwd
+  ledger-db:
+    kind: postgres
+    host: ledger-db
+    port: 5432
+    database: postgresdb
+    user: admin
+    password: password
