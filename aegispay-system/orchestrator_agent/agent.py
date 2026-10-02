@@ -448,3 +448,233 @@ async def _delegate_via_a2a(
 
     try:
         response = await client.send_message(request)
+    except Exception as exc:  # pragma: no cover - network failure path
+        logger.error("Error while calling %s: %s", agent_label, exc, exc_info=True)
+        return {"agent": agent_label, "error": str(exc)}
+
+    return _format_agent_result(agent_label, response)
+
+
+async def delegate_to_investigation_agent(transaction_details: Any) -> dict[str, Any]:
+    """Delegates the investigation of a suspicious transaction to the InvestigationAgent."""
+    logger.info("Delegating to InvestigationAgent with transaction payload.")
+    result = await _delegate_via_a2a(
+        agent_label="InvestigationAgent",
+        cache_key="investigation_agent",
+        service_url=INVESTIGATION_AGENT_URL,
+        payload_prefix="investigate_transaction:",
+        payload=transaction_details,
+    )
+    if isinstance(result, dict) and result.get("data") is not None:
+        global _latest_case_file
+        _latest_case_file = result["data"]
+    return result
+
+
+async def delegate_to_actuator_agent(action_command: Any) -> dict[str, Any]:
+    """Send a lock_account command to the ActuatorAgent via A2A.
+
+    Expects JSON containing `action`, `account_id`, `ext_user_id` (optional), `reason`,
+    and optionally `case_file`. The `account_id` field is required by the GenAI toolbox.
+    """
+    logger.info("Delegating to ActuatorAgent with command payload.")
+    normalized_payload, error = _prepare_actuator_payload(action_command)
+    if error:
+        logger.error("Actuator command validation failed: %s", error)
+        return {
+            "agent": "ActuatorAgent",
+            "error": error,
+        }
+    return await _delegate_via_a2a(
+        agent_label="ActuatorAgent",
+        cache_key="actuator_agent",
+        service_url=ACTUATOR_AGENT_URL,
+        payload_prefix="execute_action:",
+        payload=normalized_payload,
+    )
+
+
+investigation_tool = FunctionTool(delegate_to_investigation_agent)
+actuator_tool = FunctionTool(delegate_to_actuator_agent)
+
+# Create FastAPI app for A2A server functionality
+app = FastAPI(title="Orchestrator Agent A2A Server")
+
+# Global orchestrator service instance
+orchestrator_service = None
+
+class OrchestratorService:
+    def __init__(self):
+        logger.info("Initializing OrchestratorService...")
+
+        if not GEMINI_API_KEY:
+            raise ValueError(
+                "GEMINI_API_KEY environment variable is required for the orchestrator agent."
+            )
+
+        threshold = _parse_float(RISK_SCORE_THRESHOLD)
+        if threshold is None:
+            logger.warning(
+                "Invalid RISK_SCORE_THRESHOLD value '%s'; defaulting to 7.0",
+                RISK_SCORE_THRESHOLD,
+            )
+            threshold = 7.0
+
+        self.risk_threshold = threshold
+        self.default_user_id = "transaction-monitor"
+
+        instruction = ORCHESTRATOR_PROMPT_TEMPLATE.format(
+            threshold=f"{self.risk_threshold:.2f}"
+        )
+
+        self.llm_agent = LlmAgent(
+            name="orchestrator_agent",
+            model=Gemini(api_key=GEMINI_API_KEY, model="gemini-2.5-flash"),
+            instruction=instruction,
+            tools=[
+                investigation_tool,
+                actuator_tool,
+            ],
+        )
+
+        self.session_service = InMemorySessionService()
+        self.runner = Runner(
+            app_name="aegispay_orchestrator_app",
+            agent=self.llm_agent,
+            session_service=self.session_service,
+        )
+
+        logger.info(
+            "OrchestratorService initialized (risk threshold=%s).",
+            self.risk_threshold,
+        )
+
+    async def process_transaction_alert(self, transaction_data: dict) -> dict:
+        """Run the Gemini-backed orchestration flow for a transaction alert."""
+        logger.info("Received transaction alert: %s", transaction_data)
+
+        user_id = (
+            transaction_data.get("from_account_id")
+            or transaction_data.get("user_id")
+            or self.default_user_id
+        )
+        session_id = str(uuid.uuid4())
+
+        await self.session_service.create_session(
+            app_name=self.runner.app_name,
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+        tool_events: list[dict[str, Any]] = []
+        final_text = ""
+        last_text = ""
+        account_id: Optional[str] = None
+
+        message_text = (
+            "Transaction alert received.\n"
+            f"Risk threshold: {self.risk_threshold:.2f}\n"
+            "Analyze the details, call InvestigationAgent first, and escalate only when warranted.\n"
+            "When invoking ActuatorAgent, use JSON of the form {\"action\": \"lock_account\", \"account_id\": \"...\", \"ext_user_id\": \"...\", \"reason\": \"...\"}.\n"
+            "Do not use alternate field names such as 'command'.\n"
+            f"Transaction JSON:\n{json.dumps(transaction_data, indent=2)}"
+        )
+        message_content = types.Content(
+            role="user",
+            parts=[types.Part(text=message_text)],
+        )
+
+        try:
+            async for event in self.runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=message_content,
+            ):
+                for call in getattr(event, "get_function_calls", lambda: [])() or []:
+                    tool_events.append(
+                        {
+                            "event": "call",
+                            "tool": _human_tool_name(call.name),
+                            "args": call.args,
+                        }
+                    )
+
+                for response in getattr(event, "get_function_responses", lambda: [])() or []:
+                    tool_events.append(
+                        {
+                            "event": "response",
+                            "tool": _human_tool_name(response.name),
+                            "response": response.response,
+                        }
+                    )
+
+                if getattr(event, "content", None) and getattr(event.content, "parts", None):
+                    text_segments = []
+                    for part in event.content.parts:
+                        if getattr(part, "text", None):
+                            text_segments.append(part.text.strip())
+                    if text_segments:
+                        last_text = "\n".join(filter(None, text_segments))
+
+                if getattr(event, "is_final_response", None) and event.is_final_response():
+                    final_text = last_text
+
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(
+                "An error occurred during the orchestration flow: %s",
+                exc,
+                exc_info=True,
+            )
+            return {
+                "status": "error",
+                "summary": str(exc),
+                "session_id": session_id,
+                "user_id": user_id,
+                "tool_events": tool_events,
+            }
+
+        summary = final_text or last_text or "No summary produced by orchestrator."
+
+        investigation_result = _extract_tool_response(tool_events, "InvestigationAgent")
+        actuator_result = _extract_tool_response(tool_events, "ActuatorAgent")
+
+        case_file = None
+        if isinstance(investigation_result, dict):
+            case_file = investigation_result.get("data")
+
+        risk_score = _extract_risk_score(case_file)
+        justification = _extract_justification(case_file)
+        ext_user_id = _extract_ext_user_id(case_file)
+        if account_id is None:
+            account_id = _extract_account_id(case_file)
+
+        actuator_result_success = False
+        if isinstance(actuator_result, dict):
+            actuator_result_success = not actuator_result.get("error")
+        should_actuate = actuator_result_success
+
+        fallback_invoked = False
+        fallback_error: Optional[str] = None
+
+        if (
+            risk_score is not None
+            and risk_score >= self.risk_threshold
+            and not actuator_result_success
+        ):
+            fallback_account_id = account_id or ext_user_id
+            if not fallback_account_id:
+                fallback_error = (
+                    "Unable to auto-actuate: missing account identifier in investigation result."
+                )
+                logger.error(
+                    "Fallback actuation skipped for session %s: missing account ID.",
+                    session_id,
+                )
+            else:
+                fallback_payload: dict[str, Any] = {
+                    "action": "lock_account",
+                    "account_id": fallback_account_id,
+                    "reason": (
+                        f"Automatic fallback: risk score {risk_score:.2f} on transaction "
+                        f"{transaction_data.get('transaction_id')}"
+                    ),
