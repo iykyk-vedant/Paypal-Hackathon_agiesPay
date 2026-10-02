@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AegisPay — Autonomous Multi-Agent Fraud Defense for PayPal</title>
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- AG Grid CSS (Community + Quartz Dark Theme) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.2.0/styles/ag-grid.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.2.0/styles/ag-theme-quartz.css">
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-logo">
+        <div class="logo-shield">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Aegis<span>Pay</span></h1>
+          <span class="brand-subtitle">Autonomous Multi-Agent Fraud Shield</span>
+        </div>
+      </div>
+      <div class="hackathon-badges">
+        <span class="badge paypal-badge"><i class="fa-brands fa-paypal"></i> PayPal Sandbox</span>
+        <span class="badge aggrid-badge"><i class="fa-solid fa-table-cells"></i> AG Grid Enterprise UI</span>
+        <span class="badge gemini-badge"><i class="fa-solid fa-brain"></i> Gemini 2.5 Flash</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="live-status-pill">
+        <span class="status-dot pulsing"></span>
+        <span class="status-label">Autonomous Agents Online (4/4)</span>
+      </div>
+      <button id="openSimulateModalBtn" class="btn btn-primary">
+        <i class="fa-solid fa-bolt"></i> New Simulation
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Container -->
+  <main class="dashboard-container">
+    
+    <!-- KPI Summary Metrics Row -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper blue">
+          <i class="fa-solid fa-money-bill-wave"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Total Monitored Volume</span>
+          <h2 id="totalVolume" class="kpi-value">$142,890.00</h2>
+          <span class="kpi-delta positive"><i class="fa-solid fa-arrow-trend-up"></i> +18.4% today</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper purple">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Transactions Evaluated</span>
+          <h2 id="totalTransactions" class="kpi-value">1,482</h2>
+          <span class="kpi-subtext">Real-time A2A Stream</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper red">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Fraud Intercepted</span>
+          <h2 id="fraudIntercepted" class="kpi-value">$19,650.00</h2>
+          <span class="kpi-delta warning"><i class="fa-solid fa-shield-virus"></i> 15 Attacks Mitigated</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper green">
+          <i class="fa-solid fa-stopwatch-20"></i>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-title">Avg AI Decision Latency</span>
+          <h2 id="avgLatency" class="kpi-value">1.18s</h2>
+          <span class="kpi-delta positive"><i class="fa-solid fa-check"></i> Sub-second P90</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Simulation Control & Filter Bar -->
+    <section class="action-bar-card">
+      <div class="quick-sim-buttons">
+        <span class="bar-label"><i class="fa-solid fa-play"></i> Quick Scenarios:</span>
+        <button id="simNormalBtn" class="btn btn-outline-success">
+          <i class="fa-solid fa-cart-shopping"></i> Normal Order ($45.00)
+        </button>
+        <button id="simMediumBtn" class="btn btn-outline-warning">
+          <i class="fa-solid fa-laptop"></i> High-Value Order ($1,499.00)
+        </button>
+        <button id="simFraudBtn" class="btn btn-outline-danger">
+          <i class="fa-solid fa-user-ninja"></i> Account Takeover ($4,850.00)
+        </button>
+        <button id="simVelocityBtn" class="btn btn-outline-purple">
+          <i class="fa-solid fa-gauge-high"></i> Velocity Burst (3 Rapid Orders)
+        </button>
+      </div>
+
+      <div class="grid-controls">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="quickFilterInput" placeholder="Search orders, customers, status..." />
+        </div>
+        <button id="exportCsvBtn" class="btn btn-secondary" title="Export AG Grid to CSV">
+          <i class="fa-solid fa-file-csv"></i> Export CSV
+        </button>
+      </div>
+    </section>
+
+    <!-- AG Grid Table Section -->
+    <section class="grid-section">
+      <div class="grid-card-header">
+        <div class="grid-header-title">
+          <h3><i class="fa-solid fa-table-list"></i> Real-Time PayPal Transaction Surveillance</h3>
+          <span class="grid-subtitle">Powered by AG Grid Quartz Dark • Click any row to inspect Gemini AI Case File</span>
+        </div>
+        <div class="grid-badge-legend">
+          <span class="legend-item"><span class="badge badge-safe">0.0 – 3.9 Safe</span></span>
+          <span class="legend-item"><span class="badge badge-review">4.0 – 6.9 Review</span></span>
+          <span class="legend-item"><span class="badge badge-fraud">7.0 – 10.0 Fraud Lock</span></span>
+        </div>
+      </div>
+
+      <!-- AG Grid Mounting Node -->
+      <div id="transactionsGrid" class="ag-theme-quartz-dark custom-ag-grid"></div>
+    </section>
+
+    <!-- Bottom Split: Live Agent A2A Pipeline Stream -->
+    <section class="agent-stream-section">
+      <div class="terminal-card">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="terminal-title">
+            <i class="fa-solid fa-terminal"></i> AegisPay A2A Agent Communication Feed (JSON-RPC)
+          </div>
+          <button id="clearLogsBtn" class="btn-text"><i class="fa-solid fa-trash-can"></i> Clear</button>
+        </div>
+        <div id="terminalLogs" class="terminal-body">
+          <div class="log-entry system"><span class="timestamp">[12:00:00]</span> [SYSTEM] AegisPay Multi-Agent Swarm Initialized (Monitor, Orchestrator, Investigation, Actuator).</div>
+          <div class="log-entry monitor"><span class="timestamp">[12:00:01]</span> [TransactionMonitor] Polling active. Webhook listener connected to PayPal Developer Sandbox.</div>
+          <div class="log-entry orchestrator"><span class="timestamp">[12:00:02]</span> [Orchestrator] Ready for A2A tasks. Risk escalation threshold: 7.0 / 10.0.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Side Drawer / Modal: Gemini AI Case File Inspector -->
+  <div id="caseFileDrawer" class="case-file-overlay hidden">
+    <div class="case-file-modal">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-eyebrow">AegisPay Fraud Case File</span>
+          <h2 id="modalOrderId">Order #PP-2026-9812</h2>
+        </div>
+        <button id="closeModalBtn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Top Metrics & Score Gauge -->
+        <div class="case-score-card">
+          <div class="score-dial-wrap">
+            <div id="scoreDial" class="score-dial">
+              <span id="scoreValue" class="score-number">8.7</span>
+              <span class="score-max">/ 10</span>
+            </div>
+            <span id="scoreCategory" class="score-category-tag danger">High-Risk Fraud</span>
+          </div>
+
+          <div class="case-summary-info">
+            <div class="info-row">
+              <span class="info-label">Customer Name:</span>
+              <span id="modalCustomerName" class="info-val">Alexander Wright</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">PayPal Account:</span>
+              <span id="modalAccountId" class="info-val code">ACCT-US-891240</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Transaction Amount:</span>
+              <span id="modalAmount" class="info-val highlight">$4,850.00 USD</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Current Status:</span>
+              <span id="modalStatus" class="info-val status-pill danger">ACCOUNT_LOCKED_BY_AEGISPAY</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Investigation Reasoning Section -->
+        <div class="investigation-breakdown">
+          <h4><i class="fa-solid fa-brain"></i> Gemini 2.5 Flash Investigation Justification</h4>
+          <p id="modalJustification" class="justification-text">
+            Loading investigation analysis...
+          </p>
+        </div>
+
+        <!-- Risk Factors Pill Grid -->
+        <div class="risk-factors-section">
+          <h4><i class="fa-solid fa-triangle-exclamation"></i> Identified Risk Indicators</h4>
+          <div id="modalFactorsList" class="factors-grid">
+            <span class="factor-pill danger"><i class="fa-solid fa-globe"></i> Cross-border IP Proxy</span>
+            <span class="factor-pill danger"><i class="fa-solid fa-bolt"></i> 480% Amount Spike</span>
+            <span class="factor-pill danger"><i class="fa-solid fa-clock"></i> Velocity Anomaly</span>
+          </div>
+        </div>
+
+        <!-- Raw JSON Protocol Payload -->
+        <div class="raw-json-section">
+          <div class="json-header">
+            <span><i class="fa-solid fa-code"></i> Raw A2A Case Payload (JSON)</span>
+            <button id="copyJsonBtn" class="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
+          </div>
+          <pre id="modalRawJson" class="json-viewer"></pre>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modalActionRefundBtn" class="btn btn-danger">
+          <i class="fa-solid fa-rotate-left"></i> Execute PayPal Refund
+        </button>
+        <button id="modalActionLockBtn" class="btn btn-warning">
+          <i class="fa-solid fa-lock"></i> Freeze PayPal User
+        </button>
+        <button id="modalActionDismissBtn" class="btn btn-secondary">
+          <i class="fa-solid fa-check"></i> Mark as Safe
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Transaction Simulation Modal -->
+  <div id="customSimModal" class="case-file-overlay hidden">
+    <div class="case-file-modal sim-form-modal">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-eyebrow">Interactive Testing</span>
+          <h2>Inject Custom PayPal Transaction</h2>
+        </div>
+        <button id="closeSimModalBtn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="customTxForm" class="sim-form-body">
+        <div class="form-group">
+          <label for="custName">Customer Full Name</label>
+          <input type="text" id="custName" required value="David Miller" placeholder="e.g. David Miller" />
+        </div>
+        <div class="form-group">
+          <label for="custAccount">PayPal Account ID / Email</label>
+          <input type="text" id="custAccount" required value="david.miller@example.com" />
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="custAmount">Amount ($ USD)</label>
+            <input type="number" id="custAmount" required step="0.01" value="2400.00" />
+          </div>
+          <div class="form-group half">
+            <label for="custItem">Item Category</label>
+            <select id="custItem">
+              <option value="Electronics & Hardware">Electronics & Hardware</option>
+              <option value="Digital Gift Cards">Digital Gift Cards</option>
+              <option value="Luxury Fashion">Luxury Fashion</option>
+              <option value="Subscription Software">Subscription Software</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="custLocation">Buyer Geolocation</label>
+          <input type="text" id="custLocation" value="Bucharest, Romania (IP Proxy Detected)" />
+        </div>
+
+        <div class="modal-footer form-footer">
+          <button type="button" id="cancelSimModalBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Run AegisPay Multi-Agent Pipeline</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AG Grid Enterprise JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-enterprise@32.2.0/dist/ag-grid-enterprise.min.js"></script>
+  
+  <!-- AegisPay Dashboard JS -->
+  <script src="app.js"></script>
+</body>
+</html>

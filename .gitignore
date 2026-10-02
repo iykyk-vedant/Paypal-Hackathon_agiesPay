@@ -24,8 +24,9 @@ wheels/
 *.egg
 
 # Virtual Environments
-vigil-system/mcp-server/venv/
-vigil-system/*/venv/
+aegispay-system/*/venv/
+venv/
+.venv/
 
 # IDE
 .vscode/
@@ -70,4 +71,4 @@ htmlcov/
 *.sqlite3
 
 # Application Secrets
-vigil-system/gemini-api-key-secret.yaml
+aegispay-system/gemini-api-key-secret.yaml
