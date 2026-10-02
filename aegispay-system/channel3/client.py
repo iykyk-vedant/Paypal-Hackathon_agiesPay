@@ -134,9 +134,47 @@ class Channel3Client:
         products = self.search_products(item_name, limit=1)
         top_match = products[0] if products else {}
 
-        market_price = float(top_match.get("market_price") or top_match.get("price") or order_amount)
+        # 1. Extract market price & retailer
+        market_price = 0.0
+        currency = "USD"
+        retailer = "Global Commerce Network"
+
+        # Check Channel3 live offers schema
+        if top_match.get("offers") and isinstance(top_match["offers"], list) and len(top_match["offers"]) > 0:
+            first_offer = top_match["offers"][0]
+            price_obj = first_offer.get("price")
+            if isinstance(price_obj, dict):
+                market_price = float(price_obj.get("price") or 0.0)
+                currency = price_obj.get("currency") or "USD"
+            elif isinstance(price_obj, (int, float)):
+                market_price = float(price_obj)
+            retailer = first_offer.get("domain") or "Authorized Channel3 Merchant"
+
+        # Check fallback flat schema
+        if market_price <= 0:
+            market_price = float(top_match.get("market_price") or top_match.get("price") or 0.0)
+            retailer = top_match.get("retailer") or retailer
+            currency = top_match.get("currency") or currency
+
         if market_price <= 0:
             market_price = order_amount
+
+        # 2. Extract brand
+        brand = "Verified Manufacturer"
+        if top_match.get("brands") and isinstance(top_match["brands"], list) and len(top_match["brands"]) > 0:
+            brand = top_match["brands"][0].get("name") or brand
+        elif isinstance(top_match.get("brand"), str):
+            brand = top_match.get("brand")
+
+        # 3. Extract image URL
+        image_url = "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80"
+        if top_match.get("images") and isinstance(top_match["images"], list) and len(top_match["images"]) > 0:
+            image_url = top_match["images"][0].get("url") or image_url
+        elif isinstance(top_match.get("image_url"), str):
+            image_url = top_match.get("image_url")
+
+        # 4. Extract verified title
+        verified_title = top_match.get("title") or item_name
 
         variance_amount = order_amount - market_price
         variance_pct = round(((order_amount - market_price) / market_price) * 100.0, 1)
@@ -158,13 +196,13 @@ class Channel3Client:
 
         return {
             "query": item_name,
-            "verified_title": top_match.get("title", item_name),
-            "brand": top_match.get("brand", "Verified Manufacturer"),
-            "retailer": top_match.get("retailer", "Authorized Retailer"),
-            "image_url": top_match.get("image_url", "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80"),
+            "verified_title": verified_title,
+            "brand": brand,
+            "retailer": retailer,
+            "image_url": image_url,
             "market_price": market_price,
             "order_price": order_amount,
-            "currency": top_match.get("currency", "USD"),
+            "currency": currency,
             "variance_amount": round(variance_amount, 2),
             "variance_pct": variance_pct,
             "is_tampered": is_tampered,
@@ -172,3 +210,4 @@ class Channel3Client:
             "risk_contribution": risk_contribution,
             "source": "Channel3 E-Commerce Product API (100M+ Catalog)"
         }
+
