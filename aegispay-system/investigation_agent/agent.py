@@ -19,6 +19,7 @@ import uvicorn
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from paypal import PayPalClient
 from channel3 import Channel3Client
+from elasticsearch.client import ElasticThreatIntelClient
 
 try:
     from google.adk.agents import LlmAgent
@@ -81,6 +82,7 @@ class InvestigationService:
         )
 
         self.channel3_client = Channel3Client()
+        self.elastic_client = ElasticThreatIntelClient()
 
         if self.has_llm:
             try:
@@ -141,7 +143,23 @@ class InvestigationService:
             )
             risk_signals.setdefault("signals_detected", []).append(tamper_msg)
 
-        # 4. LLM or Heuristic Reasoning
+        # 4. Elasticsearch Historical Threat Intelligence (RAG Memory)
+        payer_email = order_details.get("payer", {}).get("email_address", "")
+        signals_text = " ".join(risk_signals.get("signals_detected", []))
+        intel_query = f"{item_name} {payer_email} {signals_text}"
+        elastic_intel = self.elastic_client.search_threat_intel(
+            intel_query, category=transaction_data.get("category")
+        )
+
+        if elastic_intel and elastic_intel.get("similarity_pct", 0) >= 88.0:
+            intel_sig = (
+                f"ELASTIC_KNOWN_SYNDICATE_MATCH: Matched incident {elastic_intel['incident_id']} "
+                f"({elastic_intel['similarity_pct']}% similarity - '{elastic_intel['title']}'). "
+                f"Resolution: {elastic_intel['historical_resolution']}"
+            )
+            risk_signals.setdefault("signals_detected", []).append(intel_sig)
+
+        # 5. LLM or Heuristic Reasoning
         analysis: Dict[str, Any] = {}
         if self.has_llm:
             prompt = (
@@ -149,6 +167,7 @@ class InvestigationService:
                 f"Order Details:\n{json.dumps(order_details, indent=2)}\n\n"
                 f"Extracted Risk Signals:\n{json.dumps(risk_signals, indent=2)}\n\n"
                 f"Channel3 Product Data:\n{json.dumps(channel3_fmv, indent=2)}\n\n"
+                f"Elasticsearch Threat Intelligence:\n{json.dumps(elastic_intel, indent=2)}\n\n"
                 f"Recent Disputes Context:\n{json.dumps(disputes, indent=2)}\n\n"
                 "Provide your risk assessment as JSON."
             )
@@ -180,9 +199,9 @@ class InvestigationService:
                 logger.info("Gemini 2.5 Flash investigation completed for %s: %s", order_id, analysis)
             except Exception as e:
                 logger.warning("LLM reasoning fallback: %s", e)
-                analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv)
+                analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel)
         else:
-            analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv)
+            analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel)
 
         case_file = {
             "order_id": order_id,
@@ -191,12 +210,17 @@ class InvestigationService:
             "risk_signals": risk_signals,
             "disputes_context": disputes,
             "channel3_product_data": channel3_fmv,
+            "elastic_threat_intel": elastic_intel,
             "fraud_analysis": analysis,
         }
         return case_file
 
     def _compute_heuristic_analysis(
-        self, order_details: Dict[str, Any], risk_signals: Dict[str, Any], channel3_fmv: Optional[Dict[str, Any]] = None
+        self,
+        order_details: Dict[str, Any],
+        risk_signals: Dict[str, Any],
+        channel3_fmv: Optional[Dict[str, Any]] = None,
+        elastic_intel: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """APIMatic-grounded & Channel3-verified deterministic risk reasoning."""
         signals = risk_signals.get("signals_detected", [])
@@ -238,6 +262,9 @@ class InvestigationService:
                 "Verified commerce transaction with zero risk anomalies. Buyer tenure, billing address, "
                 "and Channel3 Fair Market Value match PayPal Seller Protection criteria."
             )
+
+        if elastic_intel and elastic_intel.get("similarity_pct", 0) >= 90.0 and score >= 7.0:
+            justification += f" Elasticsearch Threat Intelligence: {elastic_intel['similarity_pct']}% match to syndicate pattern {elastic_intel['incident_id']} ({elastic_intel['title']})."
 
         return {
             "risk_score": score,

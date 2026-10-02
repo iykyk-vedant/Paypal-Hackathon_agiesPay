@@ -27,28 +27,26 @@
 
 ---
 
-### [0:25 – 1:00] Live Dashboard & Account Takeover Mitigation
+### [0:25 – 1:00] Live Dashboard & Account Takeover Mitigation (Elasticsearch RAG)
 * **On Screen**: Focus on the **AG Grid Enterprise** dashboard at `http://localhost:8088`. Point to the `● Backend Live (Port 8085)` badge and KPI counters. Click **`[Account Takeover ($4,850.00)]`**.
 * **Voiceover**:
   > *"Here is the AegisPay Ops Center, powered by AG Grid Enterprise Quartz Dark with real-time Server-Sent Events.*
   > 
   > *Let's simulate a sophisticated Account Takeover attack. Watch what happens when I click Account Takeover:
-  > In real time, the Transaction Monitor Agent ingests the PayPal order. The Orchestrator delegates the alert to our Investigation Agent, which combines Google Gemini 2.5 Flash with APIMatic OpenAPI context rules.*
+  > In real time, the Transaction Monitor Agent ingests the PayPal order. The Orchestrator delegates the alert to our Investigation Agent, which combines Google Gemini 2.5 Flash with APIMatic OpenAPI rules and Elastic Cloud Serverless Vector Search.*
   > 
-  > *Gemini detects an offshore Tor proxy, a 24x spending spike, and a cross-border destination mismatch, scoring it a critical 9.4 out of 10.*
-  > 
-  > *Because the score exceeds our safety threshold, the Actuator Agent immediately fires a PayPal Payments v2 `refund_capture` call directly into the PayPal Developer Sandbox, neutralizing the fraud in under two seconds!"*
+  > *Elasticsearch retrieves past attack #ATK-8812 with a 99.4% vector match, confirming this Tor proxy is part of a known syndicate. Scoring it a critical 9.4 out of 10, the Actuator Agent immediately fires a PayPal Payments v2 `refund_capture` call directly into the PayPal Developer Sandbox, neutralizing the fraud in under two seconds!"*
 
 ---
 
-### [1:00 – 1:30] Channel3 Fair Market Value Shield (Cart Price Tampering)
-* **On Screen**: Click **`[🏷️ Price Tampering ($149 vs $3,499)]`**. The transaction immediately appears in AG Grid as auto-refunded. Click the row to open the Gemini Case File Drawer, focusing on the glowing **Channel3 Product Intelligence** card.
+### [1:00 – 1:30] Channel3 Fair Market Value Shield & Elastic Drawer Inspection
+* **On Screen**: Click **`[🏷️ Price Tampering ($149 vs $3,499)]`**. The transaction immediately appears in AG Grid as auto-refunded. Click the row to open the Gemini Case File Drawer, highlighting both the **Channel3 Product Intelligence card** and the **Elasticsearch Threat Intelligence & ES|QL card**.
 * **Voiceover**:
   > *"Here's something revolutionary: we integrated Channel3's clean product API across 100M+ items to combat client-side DOM Cart Price Slashing.*
   > 
   > *Watch: an attacker manipulated their cart, buying a $3,499.00 Apple MacBook Pro for just $149.00.*
   > 
-  > *In under a second, AegisPay queries Channel3, verifies the true Fair Market Value across 25,000+ retailers, detects the devastating -95.7% variance, and executes an instant PayPal Payments v2 refund before the warehouse ships the computer!"*
+  > *In under a second, Channel3 verifies the true market value, detects the -95.7% variance, while Elasticsearch connects the signature to incident #EXP-9102 via ES|QL — executing an instant PayPal refund before the warehouse ships the computer!"*
 
 ---
 
@@ -71,11 +69,12 @@
 ---
 
 ### [2:15 – 2:35] Sponsor Integration Summary & Conclusion
-* **On Screen**: Show the `render.yaml`, `astropods.yml`, `dashboard/bryntum-scheduler.js`, `channel3/client.py`, and `.apimatic/` folders in VS Code or GitHub.
+* **On Screen**: Show the `render.yaml`, `astropods.yml`, `dashboard/bryntum-scheduler.js`, `channel3/client.py`, `elasticsearch/client.py`, and `.apimatic/` folders in VS Code or GitHub.
 * **Voiceover**:
-  > *"AegisPay delivers deep, native integration across all 7 hackathon platforms:
+  > *"AegisPay delivers deep, native integration across all 8 hackathon platforms:
   > - PayPal Orders v2 & Payments v2 Sandbox REST API;
   > - AG Grid Enterprise Quartz Dark real-time surveillance;
+  > - Elastic Cloud 9.6.0 Serverless vector search & ES|QL analytics;
   > - Bryntum Scheduler dispute triage & deadline horizon;
   > - Channel3 100M+ product catalog for cart price slashing detection;
   > - Render Infrastructure-as-Code Blueprint (`render.yaml`);

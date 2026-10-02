@@ -44,12 +44,25 @@ providers:
         datatype: string
         secret: true
         description: "Channel3 E-Commerce API Key (100M+ Product Catalog)"
+  elastic:
+    scope:
+      - vector_search_and_esql
+    variables:
+      - name: ENDPOINT
+        datatype: string
+        description: "Elastic Cloud Serverless Cluster Endpoint URL"
+      - name: API_KEY
+        datatype: string
+        secret: true
+        description: "Elastic Cloud API Key"
 
 integrations:
   paypal_commerce:
     provider: paypal
   channel3_catalog:
     provider: channel3
+  elastic_threat_intel:
+    provider: elastic
 
 ingestion:
   paypal_fraud_webhook:

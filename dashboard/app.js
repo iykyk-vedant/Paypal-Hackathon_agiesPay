@@ -434,6 +434,7 @@ function handleIncomingBackendEvent(data) {
   }
 
   const channel3Data = data.investigation_result?.channel3_product_data || data.transaction_data?.channel3_product_data || null;
+  const elasticIntel = data.investigation_result?.elastic_threat_intel || data.elastic_threat_intel || null;
 
   const row = {
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -450,6 +451,7 @@ function handleIncomingBackendEvent(data) {
     justification: data.justification || analysis.justification || "AegisPay swarm fraud evaluation completed.",
     factors: data.signals || analysis.signals || ["PayPal Commerce Inspection"],
     channel3: channel3Data,
+    elasticIntel: elasticIntel,
     rawJson: data
   };
 
@@ -700,6 +702,39 @@ function simulateTransaction(customerName, amount, category, description, riskSc
       kpiState.attacksCount += 1;
     }
 
+    let simElastic = null;
+    if (riskScore >= 8.5) {
+      simElastic = {
+        incident_id: "ATK-8812",
+        title: "Account Takeover with Foreign Tor Proxy",
+        similarity_pct: 98.4,
+        description: "High-velocity syndicate using Romanian & Dutch Tor exit nodes to purchase high-value hardware with 400% spending spikes.",
+        matched_indicators: ["Tor Exit Node", "Cross-border Proxy", "Velocity Surge", "400% Amount Spike"],
+        historical_resolution: "Auto-Refunded via PayPal Payments v2 refund_capture",
+        esql_signature: "FROM aegispay_threat_intel | WHERE amount > 3000 AND location LIKE '%Romania%'"
+      };
+    } else if (riskScore >= 5.0) {
+      simElastic = {
+        incident_id: "CHG-5520",
+        title: "Friendly Fraud & Repeat Chargeback Abuse",
+        similarity_pct: 92.1,
+        description: "Serial disputer with previous chargeback claims despite carrier signature validation.",
+        matched_indicators: ["Dispute History Spike", "Excessive Claim Frequency", "High Value Physical Goods"],
+        historical_resolution: "Flagged for Human Review & PayPal Dispute Evidence Filing",
+        esql_signature: "FROM aegispay_threat_intel | WHERE amount > 800 AND risk_score > 5.0"
+      };
+    } else {
+      simElastic = {
+        incident_id: "SAFE-1001",
+        title: "Verified Legitimate Residential Purchase",
+        similarity_pct: 97.8,
+        description: "Verified residential purchase matching 3-year account tenure and 3D-Secure authentication.",
+        matched_indicators: ["Verified Buyer", "Normal Spending", "3DS Authenticated", "Seller Protection Eligible"],
+        historical_resolution: "Auto-Approved without friction",
+        esql_signature: "FROM aegispay_threat_intel | WHERE risk_score < 3.0"
+      };
+    }
+
     const newTx = {
       id: txId,
       timestamp: timeStr,
@@ -712,8 +747,9 @@ function simulateTransaction(customerName, amount, category, description, riskSc
       location: "San Jose, CA (IP: 198.51.100.24)",
       riskScore: riskScore,
       status: status,
-      justification: `Gemini 2.5 Assessment: ${description}. Evaluated against 50 prior transactions. Velocity and location analysis confirmed risk grade: ${riskScore >= 7 ? "CRITICAL FRAUD" : "VERIFIED SAFE"}.`,
+      justification: `Gemini 2.5 Assessment: ${description}. Evaluated against Elasticsearch threat memory. Risk grade: ${riskScore >= 7 ? "CRITICAL FRAUD" : "VERIFIED SAFE"}.`,
       factors: riskScore >= 7.0 ? ["Velocity Spike", "Geo Anomaly", "Unusual Item Category"] : ["Verified Buyer", "Normal Spending"],
+      elasticIntel: simElastic,
       rawJson: {
         event_type: riskScore >= 7.0 ? "CHECKOUT.ORDER.VOIDED" : "PAYMENT.CAPTURE.COMPLETED",
         order_id: `PP-2026-${orderNum}`,
@@ -722,7 +758,8 @@ function simulateTransaction(customerName, amount, category, description, riskSc
           model: "gemini-2.5-flash",
           score: riskScore,
           verdict: status
-        }
+        },
+        elastic_threat_intel: simElastic
       }
     };
 
@@ -794,6 +831,15 @@ function simulatePriceTamperingFallback() {
       image_url: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&q=80",
       channel3_verified: true
     },
+    elasticIntel: {
+      incident_id: "EXP-9102",
+      title: "Client-Side Cart Price Tampering / Slashing",
+      similarity_pct: 99.2,
+      description: "Exploit injecting client-side DOM price manipulations, reducing $3,499.00 electronics to $149.00 prior to PayPal token creation.",
+      matched_indicators: ["CHANNEL3_PRICE_TAMPERING", "Cart Slashing (-95.7%)", "DOM Manipulation", "Severe FMV Discrepancy"],
+      historical_resolution: "Auto-Refunded via PayPal Payments v2 refund_capture",
+      esql_signature: "FROM aegispay_threat_intel | WHERE amount > 3000 AND location LIKE '%Miami%'"
+    },
     rawJson: {
       event_type: "PAYMENT.CAPTURE.REFUNDED",
       order_id: `PP-2026-${orderNum}`,
@@ -803,6 +849,11 @@ function simulatePriceTamperingFallback() {
         market_price: 3499.00,
         cart_price: 149.00,
         variance: "-95.7%"
+      },
+      elastic_threat_intel: {
+        incident_id: "EXP-9102",
+        title: "Client-Side Cart Price Tampering / Slashing",
+        similarity_pct: 99.2
       }
     }
   };
@@ -917,6 +968,46 @@ function openCaseFile(tx) {
       }
     } else {
       ch3Section.classList.add("hidden");
+    }
+  }
+
+  // Elasticsearch Threat Intelligence Section
+  const elasticSection = document.getElementById("elasticThreatSection");
+  const elData = tx.elasticIntel || tx.rawJson?.investigation_result?.elastic_threat_intel || tx.rawJson?.elastic_threat_intel;
+  if (elasticSection) {
+    if (elData && elData.incident_id) {
+      elasticSection.classList.remove("hidden");
+      document.getElementById("elasticIncidentId").innerText = `#${elData.incident_id}`;
+      document.getElementById("elasticIncidentName").innerText = elData.title || "Known Threat Pattern";
+      document.getElementById("elasticSimPct").innerText = `${elData.similarity_pct || 98.4}%`;
+      document.getElementById("elasticIncidentDesc").innerText = elData.description || "Historical fraud signature retrieved from Elasticsearch serverless cluster.";
+      
+      const indGrid = document.getElementById("elasticIndicatorsGrid");
+      if (indGrid) {
+        indGrid.innerHTML = "";
+        (elData.matched_indicators || []).forEach(ind => {
+          const pill = document.createElement("span");
+          pill.className = "elastic-ind-pill";
+          pill.innerHTML = `<i class="fa-solid fa-tag"></i> ${ind}`;
+          indGrid.appendChild(pill);
+        });
+      }
+
+      const esqlEl = document.getElementById("elasticEsqlQuery");
+      if (esqlEl) {
+        esqlEl.innerText = elData.esql_signature || `FROM aegispay_threat_intel | WHERE incident_id == "${elData.incident_id}"`;
+      }
+
+      const matchBadge = document.getElementById("elasticMatchBadge");
+      if (matchBadge) {
+        if (tx.riskScore >= 7.0) {
+          matchBadge.className = "elastic-match-pill danger";
+        } else {
+          matchBadge.className = "elastic-match-pill safe";
+        }
+      }
+    } else {
+      elasticSection.classList.add("hidden");
     }
   }
 

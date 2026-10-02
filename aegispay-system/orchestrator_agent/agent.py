@@ -17,10 +17,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import uvicorn
 import httpx
-
-# Ensure paypal client module is reachable
+# Ensure aegispay-system packages are reachable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from paypal import PayPalClient
+from elasticsearch.client import ElasticThreatIntelClient
 
 try:
     from a2a.types import (
@@ -78,6 +78,7 @@ class OrchestratorService:
         self.paypal_client = PayPalClient()
         self.investigation_url = INVESTIGATION_URL
         self.actuator_url = ACTUATOR_URL
+        self.elastic_client = ElasticThreatIntelClient()
         self._http_client = httpx.AsyncClient(timeout=25.0)
 
     async def broadcast_event(self, event_data: Dict[str, Any]):
@@ -221,6 +222,12 @@ class OrchestratorService:
             "tool_events": tool_events,
         }
 
+        # Index transaction asynchronously into Elasticsearch
+        try:
+            self.elastic_client.index_transaction(final_record)
+        except Exception as e:
+            logger.debug("Non-blocking Elastic indexing error: %s", e)
+
         # Broadcast live to connected AG Grid dashboards
         await self.broadcast_event(final_record)
         return final_record
@@ -229,6 +236,16 @@ class OrchestratorService:
 # --------------------------------------------------------------------------
 # Endpoints
 # --------------------------------------------------------------------------
+
+@app.post("/api/elastic/esql")
+async def execute_esql_endpoint(request_body: Dict[str, Any]) -> Dict[str, Any]:
+    """Executes live ES|QL (Elasticsearch Query Language) query against Elastic Cloud Serverless."""
+    global orchestrator_service
+    if orchestrator_service is None:
+        orchestrator_service = OrchestratorService()
+    query_str = request_body.get("query", "FROM aegispay_threat_intel | LIMIT 5")
+    return orchestrator_service.elastic_client.run_esql(query_str)
+
 
 @app.post("/process-transaction")
 async def process_transaction_endpoint(transaction: Dict[str, Any]) -> Dict[str, Any]:

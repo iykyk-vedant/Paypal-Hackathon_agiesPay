@@ -885,6 +885,139 @@ h1, h2, h3, h4 {
   padding-top: 8px;
 }
 
+/* Elasticsearch Threat Intelligence & Vector Memory Card */
+.elastic-card {
+  background: linear-gradient(135deg, rgba(10, 25, 47, 0.95), rgba(24, 43, 73, 0.4));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.elastic-card.hidden {
+  display: none !important;
+}
+
+.elastic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.elastic-brand-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #38BDF8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.elastic-match-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.elastic-match-pill.danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.elastic-match-pill.safe {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.elastic-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.elastic-incident-title {
+  font-size: 13px;
+  color: #F8FAFC;
+  font-weight: 600;
+}
+.elastic-incident-title strong {
+  color: #38BDF8;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.elastic-desc {
+  font-size: 12px;
+  color: #CBD5E1;
+  line-height: 1.5;
+}
+
+.elastic-indicators-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.elastic-ind-pill {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94A3B8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.esql-signature-box {
+  background: #020617;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.esql-bar-title {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: #38BDF8;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.esql-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: #F1F5F9;
+  word-break: break-all;
+}
+
+.elastic-footer-note {
+  font-size: 10.5px;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
 /* Investigation Breakdown */
 .investigation-breakdown {
   background: #090E1A;

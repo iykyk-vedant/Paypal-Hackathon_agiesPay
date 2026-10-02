@@ -297,6 +297,37 @@
           </div>
         </div>
 
+        <!-- Elasticsearch Threat Intelligence & Vector Memory Section -->
+        <div id="elasticThreatSection" class="elastic-card hidden">
+          <div class="elastic-header">
+            <div class="elastic-brand-badge">
+              <i class="fa-solid fa-magnifying-glass-chart"></i> <span id="elasticClusterTag">Elasticsearch 9.6.0 Serverless</span>
+            </div>
+            <span id="elasticMatchBadge" class="elastic-match-pill danger">
+              <i class="fa-solid fa-fingerprint"></i> <span id="elasticSimPct">98.4%</span> Vector Match
+            </span>
+          </div>
+          <div class="elastic-content">
+            <div class="elastic-incident-title">
+              <strong id="elasticIncidentId">#ATK-8812</strong>: <span id="elasticIncidentName">Account Takeover with Foreign Tor Proxy</span>
+            </div>
+            <p id="elasticIncidentDesc" class="elastic-desc">
+              High-velocity syndicate using Romanian & Dutch Tor exit nodes to purchase high-value hardware with 400% spending spikes.
+            </p>
+            <div class="elastic-indicators-grid" id="elasticIndicatorsGrid">
+              <span class="elastic-ind-pill"><i class="fa-solid fa-tag"></i> Tor Exit Node</span>
+              <span class="elastic-ind-pill"><i class="fa-solid fa-tag"></i> Cross-border Proxy</span>
+            </div>
+            <div class="esql-signature-box">
+              <div class="esql-bar-title"><i class="fa-solid fa-terminal"></i> ES|QL Telemetry Pipeline:</div>
+              <code id="elasticEsqlQuery" class="esql-code">FROM aegispay_threat_intel | WHERE amount > 3000 AND location LIKE '%Romania%'</code>
+            </div>
+          </div>
+          <div class="elastic-footer-note">
+            <i class="fa-solid fa-database"></i> Grounded by Elastic Cloud Serverless Vector Search & ES|QL Analytics.
+          </div>
+        </div>
+
         <!-- AI Investigation Reasoning Section -->
         <div class="investigation-breakdown">
           <h4><i class="fa-solid fa-brain"></i> Gemini 2.5 Flash Investigation Justification</h4>

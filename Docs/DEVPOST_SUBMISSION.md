@@ -81,6 +81,11 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 - Fair Market Value (FMV) verification detecting client-side DOM Cart Price Slashing (e.g. $3,499 MacBook Pro slashed to $149).
 - Instant PayPal Payments v2 refund mitigation and dedicated Product Intelligence inspection drawer. Detailed in [`Docs/CHANNEL3_INTEGRATION.md`](Docs/CHANNEL3_INTEGRATION.md).
 
+### 8. Elastic Cloud ("Best Use of Elastic" Sponsor Award)
+- Direct integration with Elastic Cloud 9.6.0 Serverless (`aegispay-system/elasticsearch/client.py`) providing Long-Term Vector Memory & Threat Intelligence RAG for the Investigation Agent.
+- Real-time ES|QL (Elasticsearch Query Language) piped telemetry queries to analyze velocity anomalies and aggregate merchant threat patterns.
+- Dedicated Elasticsearch Threat Intelligence inspection card in the Case File Drawer. Detailed in [`Docs/ELASTIC_INTEGRATION.md`](Docs/ELASTIC_INTEGRATION.md).
+
 ---
 
 ## 🛠️ How We Built It
@@ -89,6 +94,7 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 - **AI Reasoning**: Google Gemini 2.5 Flash (`google-genai` SDK).
 - **Payment Engine**: Native Python PayPal REST Client (`aegispay-system/paypal/client.py`).
 - **Product Intelligence**: Channel3 Product API (100M+ products, 25,000+ retailers).
+- **Vector & Threat Memory**: Elastic Cloud 9.6.0 Serverless (Vector Search, ES|QL).
 - **Frontend & Surveillance**: AG Grid Enterprise v32+ (Quartz Dark), Bryntum Scheduler (Stockholm Dark), HTML5, Vanilla CSS, Server-Sent Events (SSE).
 - **Tooling & Cloud**: Render Blueprints, Astropods CLI, APIMatic Context Plugin, Postman Collection v2.1.
 
@@ -97,7 +103,7 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 ## 🚧 Challenges We Ran Into
 
 1. **A2A Swarm Synchronization**: Coordinating 4 distinct microservices without deadlock or latency spikes. We solved this with an async HTTPX connection pool and dual-mode in-process execution fallback.
-2. **Sub-Second Investigation Latency**: Fraud mitigation must happen before order confirmation returns to the user. We optimized Gemini 2.5 Flash prompt payloads with APIMatic pre-computed heuristic vectors and Channel3 FMV checks, achieving sub-second P90 inference.
+2. **Sub-Second Investigation Latency**: Fraud mitigation must happen before order confirmation returns to the user. We optimized Gemini 2.5 Flash prompt payloads with APIMatic pre-computed heuristic vectors, Channel3 FMV checks, and Elastic threat intel retrieval, achieving sub-second P90 inference.
 3. **High-Performance Dashboard Rendering**: Preventing browser freeze during rapid velocity attack bursts. We customized AG Grid's virtual DOM row renderer and eliminated costly box-shadow repaints.
 
 ---
@@ -106,7 +112,7 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 
 - **100% Native PayPal Payments v2 Execution**: Successfully executing real `refund_capture` and `void_authorization` calls in the PayPal Developer Sandbox.
 - **Sub-Second Mitigation**: Reducing end-to-end fraud investigation and autonomous mitigation from hours of manual review to under 2 seconds.
-- **Full 7-Sponsor Integration**: Seamlessly uniting PayPal, AG Grid, Render, APIMatic, Astropods, Bryntum, and Channel3 into a cohesive enterprise-grade application.
+- **Full 8-Sponsor Integration**: Seamlessly uniting PayPal, AG Grid, Render, APIMatic, Astropods, Bryntum, Channel3, and Elastic into a cohesive enterprise-grade application.
 
 ---
 

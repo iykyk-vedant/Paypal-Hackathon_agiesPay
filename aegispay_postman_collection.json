@@ -270,6 +270,28 @@
           }
         },
         {
+          "name": "Execute Live ES|QL Query (Elastic Cloud Serverless)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"FROM aegispay_threat_intel | LIMIT 5\"\n}"
+            },
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/api/elastic/esql",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["api", "elastic", "esql"]
+            },
+            "description": "Executes live ES|QL (Elasticsearch Query Language) queries against the Elastic Cloud Serverless cluster."
+          }
+        },
+        {
           "name": "Live Real-Time Stream (SSE)",
           "request": {
             "method": "GET",

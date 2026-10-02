@@ -4,6 +4,7 @@
 [![AG Grid Enterprise](https://img.shields.io/badge/AG%20Grid-Enterprise%20Quartz%20Dark-FD1D7C?style=flat-square&logo=ag-grid&logoColor=white)](https://www.ag-grid.com/)
 [![Bryntum](https://img.shields.io/badge/Bryntum-Scheduler%20Dispute%20Horizon-4F46E5?style=flat-square)](https://bryntum.com/)
 [![Channel3](https://img.shields.io/badge/Channel3-Product%20Data%20%26%20FMV-10B981?style=flat-square)](Docs/CHANNEL3_INTEGRATION.md)
+[![Elastic](https://img.shields.io/badge/Elastic-Search%20%26%20ES|QL-005571?style=flat-square&logo=elastic&logoColor=white)](Docs/ELASTIC_INTEGRATION.md)
 [![Render](https://img.shields.io/badge/Render-Blueprint%20IaC-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com)
 [![APIMatic](https://img.shields.io/badge/APIMatic-Context%20Plugin-0B78E3?style=flat-square)](Docs/APIMATIC_USAGE.md)
 [![Astropods](https://img.shields.io/badge/Astropods-Agent%20Blueprint-9B51E0?style=flat-square)](AGENT.md)
@@ -105,6 +106,11 @@ All surveillance telemetry is broadcast live via Server-Sent Events (SSE) into a
 - **Fair Market Value (FMV) Verification**: Integrates Channel3 E-Commerce API (`aegispay-system/channel3/client.py`) across 100M+ products from 25,000+ retailers.
 - **Cart Price Tampering Shield**: Detects client-side DOM price tampering (e.g. slashing a $3,499 MacBook Pro to $149) with sub-second precision.
 - **Case File Product Card**: Visualizes verified brand, normalized retailer price, and variance pills inside the dashboard case file drawer. See [`Docs/CHANNEL3_INTEGRATION.md`](Docs/CHANNEL3_INTEGRATION.md).
+
+### 8. Elastic Cloud ("Best Use of Elastic" Sponsor Award)
+- **Serverless Vector Search & Threat Intel RAG**: Direct integration with Elastic Cloud 9.6.0 Serverless (`aegispay-system/elasticsearch/client.py`) searching historical fraud attack vectors with dense cosine similarity.
+- **ES|QL Real-Time Velocity Analytics**: Employs Elasticsearch Query Language (ES|QL) piped query workflows to detect high-frequency bot bursts and anomalous spending clusters.
+- **Dashboard Inspection Card**: Renders matched incident IDs (e.g. `#ATK-8812`), vector match percentages (`99.4%`), and live ES|QL signatures in the Case File Drawer. See [`Docs/ELASTIC_INTEGRATION.md`](Docs/ELASTIC_INTEGRATION.md).
 
 ---
 

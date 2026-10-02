@@ -36,6 +36,12 @@ services:
       - key: CHANNEL3_API_KEY
         sync: false
         description: "Channel3 E-Commerce API Key for product verification and FMV pricing"
+      - key: ELASTIC_ENDPOINT
+        sync: false
+        description: "Elastic Cloud Serverless Cluster Endpoint URL"
+      - key: ELASTIC_API_KEY
+        sync: false
+        description: "Elastic Cloud API Key for threat intel search and ES|QL"
 
   # --------------------------------------------------------------------------
   # Service 2: AegisPay AG Grid Enterprise Real-Time Ops Dashboard

@@ -238,6 +238,12 @@ To qualify for the **Best Use of Channel3 ($2,500) Prize**, AegisPay integrates 
 - **FMV Verification**: Replaces manual catalog maintenance with live normalized market prices.
 - **Case File Visualizer**: Renders verified product image thumbnails, brand, retailer, and variance pills inside the merchant drawer.
 
+### 6.4 Elasticsearch (Threat Intelligence Vector Memory & ES|QL Analytics)
+To qualify for the **Best Use of Elastic Prize**, AegisPay connects to Elastic Cloud 9.6.0 Serverless:
+- **Threat Intelligence RAG**: Dense vector search across historical fraud syndicate patterns (`aegispay_threat_intel`) injecting matched attack context into Gemini 2.5 Flash prompts.
+- **ES|QL Analytics Engine**: Executes piped telemetry queries (`FROM aegispay_transactions | ...`) to compute velocity bursts and price tampering clusters in real time.
+- **Audit Trails**: Stores complete multi-agent traces and PayPal Payments v2 refund receipts in Elasticsearch.
+
 ---
 
 ## 7. Technical Stack
@@ -249,6 +255,7 @@ To qualify for the **Best Use of Channel3 ($2,500) Prize**, AegisPay integrates 
 | **Agent Protocols** | Google Agent-to-Agent (A2A) SDK, JSON-RPC 2.0 |
 | **APIs & Payment Platform**| PayPal Developer Sandbox (Orders v2, Payments v2, Disputes v1) |
 | **Product Intelligence API**| Channel3 E-Commerce API (100M+ Products Catalog, 25k+ Retailers) |
+| **Vector & Threat Memory** | Elastic Cloud 9.6.0 Serverless (Vector Search, ES|QL Pipelines) |
 | **Frontend Surveillance** | AG Grid Enterprise v32+ (Quartz Dark), Bryntum Scheduler (Stockholm Dark), Vanilla CSS |
 | **Cloud Hosting & Deploy** | Render Blueprint IaC (`render.yaml`), Astropods (`astropods.yml`), Docker |
 | **API Tooling** | APIMatic Context Plugin, Postman Collection v2.1 |
