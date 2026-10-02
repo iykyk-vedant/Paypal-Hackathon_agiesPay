@@ -291,10 +291,11 @@ async def health_check():
 
 
 def main():
-    logger.info("Starting InvestigationAgent on port 8081...")
+    port = int(os.environ.get("PORT", "8081"))
+    logger.info("Starting InvestigationAgent on port %s...", port)
     global investigation_service
     investigation_service = InvestigationService()
-    uvicorn.run(app, host="0.0.0.0", port=8081, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 
 if __name__ == "__main__":

@@ -219,10 +219,11 @@ async def health_check():
 
 
 def main():
-    logger.info("Starting TransactionMonitorAgent on port 8083...")
+    port = int(os.environ.get("PORT", "8083"))
+    logger.info("Starting TransactionMonitorAgent on port %s...", port)
     global monitor_agent
     monitor_agent = TransactionMonitorAgent()
-    uvicorn.run(app, host="0.0.0.0", port=8083, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 
 if __name__ == "__main__":

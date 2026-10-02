@@ -283,10 +283,11 @@ async def health_check():
 
 
 def main():
-    logger.info("Starting OrchestratorAgent on port 8085...")
+    port = int(os.environ.get("PORT", "8085"))
+    logger.info("Starting OrchestratorAgent on port %s...", port)
     global orchestrator_service
     orchestrator_service = OrchestratorService()
-    uvicorn.run(app, host="0.0.0.0", port=8085, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 
 if __name__ == "__main__":

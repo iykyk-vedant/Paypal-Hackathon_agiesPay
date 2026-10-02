@@ -237,10 +237,11 @@ async def health_check():
 
 
 def main():
-    logger.info("Starting ActuatorAgent on port 8082...")
+    port = int(os.environ.get("PORT", "8082"))
+    logger.info("Starting ActuatorAgent on port %s...", port)
     global actuator_service
     actuator_service = ActuatorService()
-    uvicorn.run(app, host="0.0.0.0", port=8082, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 
 if __name__ == "__main__":

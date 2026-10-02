@@ -1,0 +1,50 @@
+# Copyright 2026 AegisPay Authors
+# Render Blueprint Specification — Infrastructure as Code (IaC)
+# Target: "Best Deployment on Render" Sponsor Prize ($5,000)
+
+version: "1"
+
+services:
+  # --------------------------------------------------------------------------
+  # Service 1: AegisPay Multi-Agent Swarm API & SSE Stream
+  # --------------------------------------------------------------------------
+  - type: web
+    name: aegispay-swarm-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python aegispay-system/orchestrator_agent/agent.py
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: PAYPAL_MODE
+        value: sandbox
+      - key: RISK_SCORE_THRESHOLD
+        value: "7.0"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+        description: "Official PayPal Developer Sandbox REST App Client ID"
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+        description: "Official PayPal Developer Sandbox REST App Secret Key"
+      - key: GEMINI_API_KEY
+        sync: false
+        description: "Google Gemini 2.5 Flash API Key for investigation reasoning"
+
+  # --------------------------------------------------------------------------
+  # Service 2: AegisPay AG Grid Enterprise Real-Time Ops Dashboard
+  # --------------------------------------------------------------------------
+  - type: static
+    name: aegispay-dashboard
+    runtime: static
+    region: oregon
+    plan: free
+    staticPublishPath: ./dashboard
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
