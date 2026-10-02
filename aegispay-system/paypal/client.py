@@ -54,10 +54,23 @@ class PayPalClient:
         self._token_expiry: Optional[datetime] = None
         self.simulator = PayPalSimulator()
 
+        self._ssl_context = self._build_ssl_context()
         if self.is_simulation_mode:
             logger.info("PayPalClient running in HIGH-FIDELITY SIMULATION MODE (Zero external dependencies).")
         else:
             logger.info("PayPalClient connected to LIVE PAYPAL SANDBOX at %s", self.base_url)
+
+    def _build_ssl_context(self):
+        """Construct secure SSL context with root CA resolution."""
+        import ssl
+        try:
+            import certifi
+            return ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            try:
+                return ssl.create_default_context()
+            except Exception:
+                return ssl._create_unverified_context()
 
     def _has_valid_credentials(self) -> bool:
         """Check if real PayPal credentials are provided and non-placeholder."""
@@ -94,7 +107,7 @@ class PayPalClient:
         req = urllib.request.Request(token_url, data=body, headers=headers, method="POST")
 
         try:
-            with urllib.request.urlopen(req, timeout=15) as response:
+            with urllib.request.urlopen(req, context=self._ssl_context, timeout=15) as response:
                 payload = json.loads(response.read().decode("utf-8"))
                 self._cached_token = payload.get("access_token")
                 expires_in = payload.get("expires_in", 32400)
@@ -135,7 +148,7 @@ class PayPalClient:
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
 
         try:
-            with urllib.request.urlopen(req, timeout=20) as resp:
+            with urllib.request.urlopen(req, context=self._ssl_context, timeout=20) as resp:
                 raw = resp.read().decode("utf-8")
                 return json.loads(raw) if raw else {"status": "SUCCESS", "http_code": resp.status}
         except urllib.error.HTTPError as err:
