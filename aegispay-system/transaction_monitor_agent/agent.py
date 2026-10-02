@@ -1,285 +1,226 @@
-# Copyright 2025 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright 2026 AegisPay Authors
+# Transaction Monitor Agent — PayPal Webhook Listener & Stream Sentinel
 
 import os
+import sys
 import time
 import asyncio
 from datetime import datetime, timezone
 import logging
 import json
-import requests
-from a2a.client.legacy import A2AClient
-from a2a.types import (
-    JSONRPCErrorResponse,
-    Message,
-    MessageSendParams,
-    Role,
-    SendMessageRequest,
-    SendMessageResponse,
-    SendMessageSuccessResponse,
-    Task,
-    TextPart,
-)
+import random
+from typing import Dict, Any, Optional
+
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+import uvicorn
 import httpx
-import uuid
+
+# Ensure paypal client module is reachable
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from paypal import PayPalClient, FraudScenario
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("aegispay.transaction_monitor_agent")
 
-# Get config from environment variables
-GENAL_TOOLBOX_URL = os.environ.get("GENAL_TOOLBOX_SERVICE_URL", "http://genal-toolbox-service")
-ORCHESTRATOR_URL = os.environ.get("ORCHESTRATOR_SERVICE_URL", "http://orchestrator-agent-service")
-POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", 5))
+ORCHESTRATOR_URL = os.environ.get("ORCHESTRATOR_SERVICE_URL", "http://localhost:8085")
+POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", 6))
 FRAUD_THRESHOLD = float(os.environ.get("FRAUD_THRESHOLD", 1000.0))
+
+app = FastAPI(title="AegisPay Transaction Monitor & Webhook Receiver")
+monitor_agent = None
+
 
 class TransactionMonitorAgent:
     """
-    A custom agent that monitors for new transactions, flags suspicious ones,
-    and sends them to the Orchestrator agent for further processing.
+    Continuous stream monitor and webhook gateway for PayPal Commerce events.
+    Listens for live checkout approval and payment capture events,
+    pre-screens risk signals, and dispatches to the Orchestrator agent.
     """
 
-    def __init__(self) -> None:
-        logger.info("Initializing TransactionMonitorAgent...")
-        self.genal_toolbox_url = GENAL_TOOLBOX_URL
-        self.orchestrator_client = None  # Lazy initialization
-        self.last_processed_timestamp = datetime.now(timezone.utc).isoformat()
-        logger.info("TransactionMonitorAgent initialized.")
+    def __init__(self):
+        logger.info("Initializing TransactionMonitorAgent (poll interval: %ss, threshold: $%s)...", POLL_INTERVAL, FRAUD_THRESHOLD)
+        self.orchestrator_url = ORCHESTRATOR_URL
+        self.paypal_client = PayPalClient()
+        self.poll_interval = POLL_INTERVAL
+        self.fraud_threshold = FRAUD_THRESHOLD
+        self._http_client = httpx.AsyncClient(timeout=30.0)
+        self.is_monitoring = False
+        self._monitor_task = None
 
-    async def run(self) -> None:
-        """The main loop of the agent."""
-        logger.info(f"Starting transaction monitoring loop (poll interval: {POLL_INTERVAL}s)...")
-        while True:
-            await self.process_new_transactions()
-            await asyncio.sleep(POLL_INTERVAL)
+    async def start_stream(self):
+        """Start the background streaming sentinel."""
+        if not self.is_monitoring:
+            self.is_monitoring = True
+            self._monitor_task = asyncio.create_task(self._monitoring_loop())
+            logger.info("Transaction stream sentinel activated.")
 
-    def get_new_transactions_via_genai_toolbox(self, last_timestamp: str):
-        """Get new transactions via genai-toolbox REST API."""
-        try:
-            # Call genai-toolbox using the correct REST API endpoint
-            url = f"{self.genal_toolbox_url}/api/tool/get_new_transactions/invoke"
-            
-            # REST API request payload
-            payload = {
-                "last_timestamp": last_timestamp
-            }
-            
-            response = requests.post(url, json=payload, headers={'Content-Type': 'application/json'}, timeout=30)
-            
-            if response.status_code == 200:
-                result = response.json()
-                # genai-toolbox returns results in various formats, typically with data or rows
-                if isinstance(result, dict):
-                    # Extract transaction data from various possible response formats
-                    if "data" in result:
-                        data = result["data"]
-                    elif "rows" in result:
-                        data = result["rows"]
-                    elif "result" in result:
-                        data = result["result"]
-                    else:
-                        # If it's already a list/array, return as is
-                        data = result if isinstance(result, list) else []
-                    
-                    # If data is a string, parse it as JSON
-                    if isinstance(data, str):
-                        try:
-                            data = json.loads(data)
-                        except json.JSONDecodeError as e:
-                            logger.error(f"Failed to parse JSON response from genai-toolbox: {e}")
-                            return []
-                    
-                    return data if isinstance(data, list) else []
-                elif isinstance(result, list):
-                    return result
+    async def stop_stream(self):
+        """Stop background streaming sentinel."""
+        self.is_monitoring = False
+        if self._monitor_task:
+            self._monitor_task.cancel()
+            self._monitor_task = None
+        logger.info("Transaction stream sentinel deactivated.")
+
+    async def _monitoring_loop(self):
+        """Continuous background loop simulating live commerce transaction arrivals."""
+        while self.is_monitoring:
+            try:
+                # 80% legitimate commerce, 20% random fraud attack pattern
+                r = random.random()
+                if r < 0.65:
+                    scenario = FraudScenario.LEGITIMATE_ORDER
+                elif r < 0.80:
+                    scenario = FraudScenario.ACCOUNT_TAKEOVER
+                elif r < 0.90:
+                    scenario = FraudScenario.CARD_TESTING_BOT
                 else:
-                    logger.warning(f"Unexpected response format from genai-toolbox: {result}")
-                    return []
+                    scenario = FraudScenario.CHARGEBACK_EXPLOIT
+
+                order = self.paypal_client.simulator.generate_simulated_order(scenario)
+                webhook_event = self.paypal_client.simulator.generate_webhook_event(order)
+
+                logger.info(
+                    "Sentinel generated streaming event: %s ($%s, %s)",
+                    order.get("id"),
+                    order.get("purchase_units", [{}])[0].get("amount", {}).get("value"),
+                    scenario.value,
+                )
+
+                await self.forward_to_orchestrator(order)
+            except Exception as e:
+                logger.error("Error in streaming sentinel loop: %s", e)
+
+            await asyncio.sleep(self.poll_interval)
+
+    async def forward_to_orchestrator(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Dispatch a transaction or order alert to the Orchestrator Swarm Leader."""
+        logger.info("Forwarding order %s to Orchestrator at %s", order_data.get("id"), self.orchestrator_url)
+        try:
+            resp = await self._http_client.post(
+                f"{self.orchestrator_url}/process-transaction",
+                json=order_data,
+                timeout=20.0,
+            )
+            if resp.status_code == 200:
+                result = resp.json()
+                logger.info("Orchestrator completed processing for %s: %s", order_data.get("id"), result.get("summary"))
+                return result
             else:
-                result = response.json() if response.headers.get('content-type') == 'application/json' else {}
-                if "error" in result:
-                    logger.error(f"genai-toolbox API error: {result['error']}")
-                    # If it's a database schema issue, continue with simulation mode
-                    if "does not exist" in result["error"]:
-                        logger.info("Database schema issue detected, falling back to simulation mode")
-                        return []
-                else:
-                    logger.error(f"genai-toolbox HTTP error: {response.status_code} - {response.text}")
-                return []
+                logger.warning("Orchestrator returned HTTP %s: %s", resp.status_code, resp.text)
+                return {"error": "ORCHESTRATOR_HTTP_ERROR", "status_code": resp.status_code}
         except Exception as e:
-            logger.error(f"Error calling genai-toolbox API: {e}")
-            return []
-
-    async def process_new_transactions(self) -> None:
-        """Fetches and processes new transactions."""
-        logger.info(f"Fetching new transactions since {self.last_processed_timestamp}...")
-        try:
-            # Use genai-toolbox REST API to get new transactions
-            transactions = self.get_new_transactions_via_genai_toolbox(self.last_processed_timestamp)
-             
-            if not transactions:
-                logger.info("No new transactions found.")
-                # Simulation disabled to avoid synthetic alerts in production environments.
-                return
-             
-            logger.info(f"Found {len(transactions)} new transactions.")
-             
-            latest_timestamp = self.last_processed_timestamp
-            alert_tasks = []  # Collect alert tasks to run concurrently
-            
-            for tx in transactions:
-                if float(tx.get("amount", 0)) > FRAUD_THRESHOLD:
-                    logger.warning(f"High-value transaction detected: {tx['transaction_id']} for amount {tx['amount']}. Alerting orchestrator.")
-                    alert_tasks.append(self.alert_orchestrator(tx))
-             
-                if tx["timestamp"] > latest_timestamp:
-                    latest_timestamp = tx["timestamp"]
-             
-            # Execute all alerts concurrently
-            if alert_tasks:
-                await asyncio.gather(*alert_tasks, return_exceptions=True)
-             
-            self.last_processed_timestamp = latest_timestamp
-
-        except Exception as e:
-            logger.error(f"Error processing new transactions: {e}", exc_info=True)
-
-    @staticmethod
-    def _extract_message_text(message: Message) -> str:
-        """Return concatenated text from the parts of a Message."""
-        if not getattr(message, "parts", None):
-            return ""
-
-        texts = []
-        for part in message.parts:
-            text_value = None
-            if hasattr(part, "root") and getattr(part.root, "text", None):
-                text_value = part.root.text
-            elif getattr(part, "text", None):
-                text_value = part.text
-
-            if text_value:
-                texts.append(text_value.strip())
-
-        return "\n".join(filter(None, texts))
-
-    @staticmethod
-    def _format_success_payload(result_payload):
-        """Generate a human-readable summary for orchestrator responses."""
-        if isinstance(result_payload, Message):
-            text = TransactionMonitorAgent._extract_message_text(result_payload)
-            return text or f"Message parts: {result_payload.parts}"
-
-        if isinstance(result_payload, Task):
-            return f"Task {result_payload.id} status={result_payload.status.state}"
-
-        return repr(result_payload)
-
-    def create_orchestrator_client(self):
-        """Create A2A client for orchestrator communication."""
-        try:
-            # Create legacy A2A client with httpx
-            httpx_client = httpx.AsyncClient(timeout=httpx.Timeout(60.0))
-            client = A2AClient(
-                httpx_client=httpx_client,
-                url=f"{ORCHESTRATOR_URL}"
-            )
-            logger.info(f"Created A2A client for orchestrator at {ORCHESTRATOR_URL}/a2a")
-            return client
-        except Exception as e:
-            logger.error(f"Failed to create A2A client: {e}")
-            return None
-
-    async def alert_orchestrator(self, transaction: dict) -> None:
-        """Sends a transaction alert to the orchestrator agent via A2A protocol."""
-        try:
-            # Lazy initialization of client
-            if self.orchestrator_client is None:
-                self.orchestrator_client = self.create_orchestrator_client()
-            
-            if self.orchestrator_client is None:
-                logger.warning(f"No A2A client available, skipping alert for transaction: {transaction['transaction_id']}")
-                return
-            
-            logger.info(f"Sending A2A alert for transaction: {transaction['transaction_id']}")
-            logger.info(f"Transaction details: amount={transaction.get('amount')}, to_account={transaction.get('to_account_id')}")
-            
-            # Create properly formatted A2A message request for the orchestrator
-            text_part = TextPart(
-                text=f"Process transaction alert: {json.dumps(transaction)}"
-            )
-            message_content = Message(
-                message_id=str(uuid.uuid4()),
-                role=Role.user,
-                parts=[text_part]
-            )
-            message_params = MessageSendParams(message=message_content)
-            message_request = SendMessageRequest(
-                id=1,
-                params=message_params
-            )
-            
-            # Send A2A message to orchestrator
-            response = await self.orchestrator_client.send_message(message_request)
-
-            if not isinstance(response, SendMessageResponse):
-                logger.error(
-                    "Unexpected orchestrator response type for transaction %s: %s",
-                    transaction["transaction_id"],
-                    type(response),
-                )
-                return
-
-            root_payload = response.root
-            if isinstance(root_payload, JSONRPCErrorResponse):
-                logger.error(
-                    "Orchestrator returned JSON-RPC error for transaction %s: %s",
-                    transaction["transaction_id"],
-                    root_payload.error,
-                )
-                return
-
-            if isinstance(root_payload, SendMessageSuccessResponse):
-                payload = root_payload.result
-            else:
-                payload = getattr(root_payload, "result", None)
-
-            if payload is None:
-                logger.error(
-                    "Orchestrator response missing result for transaction %s",
-                    transaction["transaction_id"],
-                )
-                return
-
-            summary = self._format_success_payload(payload)
-            logger.info(
-                "Successfully sent alert for transaction %s. Orchestrator response: %s",
-                transaction["transaction_id"],
-                summary,
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to alert orchestrator for transaction {transaction['transaction_id']}: {e}", exc_info=True)
+            logger.info("Orchestrator HTTP call failed (using direct fallback): %s", e)
+            # Direct in-process fallback
+            from orchestrator_agent.agent import OrchestratorService
+            orch = OrchestratorService()
+            return await orch.process_transaction_alert(order_data)
 
 
-async def main() -> None:
-    """Entry point for the agent."""
+# --------------------------------------------------------------------------
+# Endpoints: PayPal Webhooks & Attack Simulation
+# --------------------------------------------------------------------------
+
+@app.post("/webhooks/paypal")
+async def paypal_webhook_listener(request: Request, background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """
+    Official PayPal Webhook receiver.
+    Receives live events from developer.paypal.com/dashboard/webhooksSimulator:
+    - CHECKOUT.ORDER.APPROVED
+    - PAYMENT.CAPTURE.COMPLETED
+    - PAYMENT.CAPTURE.DENIED
+    - CUSTOMER.DISPUTE.CREATED
+    """
+    global monitor_agent
+    if monitor_agent is None:
+        monitor_agent = TransactionMonitorAgent()
+
     try:
-        agent = TransactionMonitorAgent()
-        await agent.run()
+        body = await request.json()
+        event_type = body.get("event_type", "UNKNOWN_EVENT")
+        event_id = body.get("id", "UNKNOWN_ID")
+        resource = body.get("resource", {})
+
+        logger.info("Received PayPal Webhook [%s] ID: %s", event_type, event_id)
+
+        # Process the order or capture in the resource
+        order_data = resource if "purchase_units" in resource or "intent" in resource else {"id": resource.get("id"), "raw_resource": resource}
+
+        # Dispatch to orchestrator
+        background_tasks.add_task(monitor_agent.forward_to_orchestrator, order_data)
+
+        return {
+            "status": "ACCEPTED",
+            "event_id": event_id,
+            "event_type": event_type,
+            "dispatched_to_aegispay_swarm": True,
+        }
     except Exception as e:
-        logger.fatal(f"Failed to start TransactionMonitorAgent: {e}", exc_info=True)
+        logger.error("Error processing PayPal webhook payload: %s", e, exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid webhook payload: {str(e)}")
+
+
+@app.post("/simulate-attack/{scenario}")
+async def simulate_attack_endpoint(scenario: str) -> Dict[str, Any]:
+    """
+    Trigger an instant simulated fraud attack for live judge demos:
+    - account_takeover
+    - card_testing_bot
+    - chargeback_exploit
+    - legitimate_order
+    """
+    global monitor_agent
+    if monitor_agent is None:
+        monitor_agent = TransactionMonitorAgent()
+
+    scenario_map = {
+        "account_takeover": FraudScenario.ACCOUNT_TAKEOVER,
+        "ato": FraudScenario.ACCOUNT_TAKEOVER,
+        "card_testing_bot": FraudScenario.CARD_TESTING_BOT,
+        "bot": FraudScenario.CARD_TESTING_BOT,
+        "chargeback_exploit": FraudScenario.CHARGEBACK_EXPLOIT,
+        "dispute": FraudScenario.CHARGEBACK_EXPLOIT,
+        "legitimate_order": FraudScenario.LEGITIMATE_ORDER,
+        "legit": FraudScenario.LEGITIMATE_ORDER,
+    }
+    selected_scenario = scenario_map.get(scenario.lower(), FraudScenario.ACCOUNT_TAKEOVER)
+
+    order = monitor_agent.paypal_client.simulator.generate_simulated_order(selected_scenario)
+    logger.info("Triggering simulated attack scenario: %s (Order %s)", selected_scenario.value, order.get("id"))
+    result = await monitor_agent.forward_to_orchestrator(order)
+    return result
+
+
+@app.post("/stream/start")
+async def start_stream_endpoint():
+    global monitor_agent
+    if monitor_agent is None:
+        monitor_agent = TransactionMonitorAgent()
+    await monitor_agent.start_stream()
+    return {"status": "STREAMING_ACTIVE", "poll_interval_seconds": monitor_agent.poll_interval}
+
+
+@app.post("/stream/stop")
+async def stop_stream_endpoint():
+    global monitor_agent
+    if monitor_agent is None:
+        monitor_agent = TransactionMonitorAgent()
+    await monitor_agent.stop_stream()
+    return {"status": "STREAMING_STOPPED"}
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "transaction_monitor_agent", "mode": "paypal_commerce"}
+
+
+def main():
+    logger.info("Starting TransactionMonitorAgent on port 8083...")
+    global monitor_agent
+    monitor_agent = TransactionMonitorAgent()
+    uvicorn.run(app, host="0.0.0.0", port=8083, log_level="info")
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
