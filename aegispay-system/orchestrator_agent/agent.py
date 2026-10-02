@@ -178,3 +178,273 @@ def _format_agent_result(agent_label: str, response: SendMessageResponse) -> dic
     if isinstance(result, Task):
         return {
             "agent": agent_label,
+            "task": result.model_dump(mode="json"),
+        }
+
+    return {"agent": agent_label, "result": result}
+
+
+def _normalize_payload(payload: Any, agent_label: str) -> str | None:
+    """Ensure payload is valid JSON and return it as a string."""
+    if isinstance(payload, (dict, list, int, float, bool)) or payload is None:
+        return json.dumps(payload)
+    if isinstance(payload, str):
+        candidate = payload.strip()
+        if not candidate:
+            return json.dumps({})
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError:
+            logger.warning(
+                "Payload provided to %s delegate is not valid JSON: %s",
+                agent_label,
+                payload,
+            )
+            return None
+        return json.dumps(parsed)
+
+    logger.warning("Unsupported payload type %s for %s delegate", type(payload), agent_label)
+    return None
+
+
+def _parse_float(value: Any) -> Optional[float]:
+    """Attempt to convert a value to float, returning None on failure."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        candidate = value.strip().replace("%", "")
+        if not candidate:
+            return None
+        try:
+            return float(candidate)
+        except ValueError:
+            return None
+    return None
+
+
+def _extract_risk_score(case_file: Any) -> Optional[float]:
+    """Extract a numeric risk score from the investigation case file."""
+    if not isinstance(case_file, dict):
+        return None
+
+    fraud_analysis = case_file.get("fraud_analysis")
+    if isinstance(fraud_analysis, dict):
+        score = _parse_float(fraud_analysis.get("risk_score"))
+        if score is not None:
+            return score
+
+    # Some responses may return risk_score at the top level
+    return _parse_float(case_file.get("risk_score"))
+
+
+def _extract_justification(case_file: Any) -> Optional[str]:
+    """Retrieve a textual justification from the case file if available."""
+    if not isinstance(case_file, dict):
+        return None
+
+    fraud_analysis = case_file.get("fraud_analysis")
+    if isinstance(fraud_analysis, dict):
+        justification = fraud_analysis.get("justification")
+        if isinstance(justification, str):
+            return justification
+
+    justification = case_file.get("justification")
+    if isinstance(justification, str):
+        return justification
+
+    return None
+
+
+def _extract_ext_user_id(case_file: Any) -> Optional[str]:
+    """Extract ext_user_id from the case file using multiple heuristics."""
+    if not isinstance(case_file, dict):
+        return None
+
+    transaction_data = case_file.get("transaction_data")
+    if isinstance(transaction_data, dict):
+        for key in ("ext_user_id", "user_id", "from_account_id"):
+            value = transaction_data.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+    user_details = case_file.get("user_details")
+    if isinstance(user_details, dict):
+        candidate = user_details.get("ext_user_id")
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
+    elif isinstance(user_details, list):
+        for entry in user_details:
+            if isinstance(entry, dict):
+                candidate = entry.get("ext_user_id")
+                if isinstance(candidate, str) and candidate.strip():
+                    return candidate.strip()
+
+    return None
+
+
+def _extract_account_id(case_file: Any) -> Optional[str]:
+    """Extract an account identifier from the case file."""
+    if not isinstance(case_file, dict):
+        return None
+
+    transaction_data = case_file.get("transaction_data")
+    if isinstance(transaction_data, dict):
+        for key in ("account_id", "from_account_id", "user_id"):
+            value = transaction_data.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+    user_details = case_file.get("user_details")
+    if isinstance(user_details, dict):
+        candidate = user_details.get("account_id") or user_details.get("ext_user_id")
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
+    elif isinstance(user_details, list):
+        for entry in user_details:
+            if isinstance(entry, dict):
+                candidate = entry.get("account_id") or entry.get("ext_user_id")
+                if isinstance(candidate, str) and candidate.strip():
+                    return candidate.strip()
+
+    return None
+
+
+def _maybe_extract_json_block(text: str) -> str | None:
+    """Return the first JSON object substring found in text, if any."""
+    stack: list[str] = []
+    start: int | None = None
+    for index, char in enumerate(text):
+        if char == "{":
+            if not stack:
+                start = index
+            stack.append(char)
+        elif char == "}":
+            if stack:
+                stack.pop()
+                if not stack and start is not None:
+                    return text[start : index + 1]
+    return None
+
+
+def _coerce_to_dict(raw_command: Any) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    """Best-effort conversion of LLM output into a dictionary."""
+    if isinstance(raw_command, dict):
+        return dict(raw_command), None
+
+    if not isinstance(raw_command, str):
+        return None, f"Unsupported actuator payload type: {type(raw_command)}"
+
+    text = raw_command.strip()
+    # Strip leading tokens such as "execute_action:" or fenced code blocks.
+    if text.lower().startswith("execute_action:"):
+        text = text.split(":", 1)[1].strip()
+    if text.startswith("```"):
+        parts = text.split("```", 2)
+        text = parts[1] if len(parts) > 1 else text.strip("`")
+    if text.lower().startswith("json"):
+        text = text[4:]
+    text = text.strip("`").strip()
+
+    candidates: list[str] = []
+    block = _maybe_extract_json_block(text)
+    if block:
+        candidates.append(block)
+    candidates.append(text)
+
+    sanitized_candidates: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        candidate = candidate.strip()
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        sanitized_candidates.append(candidate)
+        if "'" in candidate and '"' not in candidate:
+            sanitized_candidates.append(candidate.replace("'", '"'))
+
+    for candidate in sanitized_candidates:
+        try:
+            return json.loads(candidate), None
+        except json.JSONDecodeError:
+            continue
+
+    logger.warning("Unable to coerce actuator payload into JSON: %s", raw_command)
+    return None, "Actuator command must be valid JSON after sanitization."
+
+
+def _prepare_actuator_payload(raw_command: Any) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    """Normalize LLM-provided actuator command payload."""
+    payload, error = _coerce_to_dict(raw_command)
+    if payload is None:
+        return None, error
+
+    case_file = payload.get("case_file")
+    if case_file is None and _latest_case_file is not None:
+        case_file = _latest_case_file
+    account_id = payload.get("account_id") or payload.get("from_account_id")
+    ext_user_id = payload.get("ext_user_id") or payload.get("user_id")
+
+    if account_id is None and isinstance(case_file, dict):
+        account_id = _extract_account_id(case_file)
+    if ext_user_id is None and isinstance(case_file, dict):
+        ext_user_id = _extract_ext_user_id(case_file)
+        account_id = _extract_account_id(case_file)
+    if account_id is None and ext_user_id is not None:
+        account_id = ext_user_id
+
+    if not account_id:
+        return None, (
+            "Actuator command missing account_id. Include the originating account_id from the investigation results."
+        )
+
+    reason = payload.get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        reason = "Account locked due to investigation exceeding risk threshold."
+
+    normalized: dict[str, Any] = {
+        "action": "lock_account",
+        "account_id": account_id,
+        "reason": reason.strip(),
+    }
+    if ext_user_id:
+        normalized["ext_user_id"] = ext_user_id
+    if case_file is not None:
+        normalized["case_file"] = case_file
+
+    return normalized, None
+
+
+async def _delegate_via_a2a(
+    *,
+    agent_label: str,
+    cache_key: str,
+    service_url: str,
+    payload_prefix: str,
+    payload: Any,
+) -> dict[str, Any]:
+    """Send a JSON-RPC message to a downstream agent and return normalized output."""
+    client = _get_or_create_client(cache_key, service_url)
+    if client is None:
+        return {"agent": agent_label, "error": f"Unable to connect to {agent_label}"}
+
+    payload_json = _normalize_payload(payload, agent_label)
+    if payload_json is None:
+        return {
+            "agent": agent_label,
+            "error": "Provided payload is not valid JSON",
+        }
+
+    message = Message(
+        message_id=str(uuid.uuid4()),
+        role=Role.user,
+        parts=[TextPart(text=f"{payload_prefix} {payload_json}")],
+    )
+    request = SendMessageRequest(
+        id=str(uuid.uuid4()),
+        params=MessageSendParams(message=message),
+    )
+
+    try:
+        response = await client.send_message(request)
