@@ -218,3 +218,128 @@ async def handle_a2a_message(request: SendMessageRequest) -> SendMessageResponse
     """Handle incoming A2A messages from other agents."""
     global investigation_service
     
+    if investigation_service is None:
+        raise HTTPException(status_code=500, detail="Investigation service not initialized")
+    
+    try:
+        # Extract message text from A2A message parts
+        message_text = ""
+        if hasattr(request, 'params') and request.params:
+            if hasattr(request.params, 'message') and request.params.message:
+                if hasattr(request.params.message, 'parts') and request.params.message.parts:
+                    for part in request.params.message.parts:
+                        # Part has a 'root' attribute containing the TextPart
+                        if hasattr(part, 'root') and hasattr(part.root, 'text'):
+                            message_text = part.root.text
+                            break
+        
+        logger.info(f"Received A2A message: {message_text}")
+        
+        # Parse the transaction data from the message
+        if "investigate_transaction:" in message_text or "transaction_data" in message_text:
+            # Try to extract JSON from the message
+            try:
+                if "investigate_transaction:" in message_text:
+                    transaction_json = message_text.replace("investigate_transaction: ", "")
+                else:
+                    transaction_json = message_text
+                    
+                transaction_data = json.loads(transaction_json)
+                
+                # Process the transaction investigation
+                result = await investigation_service.investigate_transaction(transaction_data)
+                
+                # Create proper A2A response message
+                response_text = TextPart(text=f"Investigation completed: {json.dumps(result)}")
+                response_message = Message(
+                    message_id=str(uuid.uuid4()),
+                    role=Role.agent,
+                    parts=[response_text]
+                )
+                
+                # Return proper A2A success response
+                success_response = SendMessageSuccessResponse(
+                    id=request.id,
+                    result=response_message
+                )
+                return SendMessageResponse(root=success_response)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse transaction data from message: {e}")
+                # Create error response
+                response_text = TextPart(text=f"Error: Failed to parse transaction data - {str(e)}")
+                response_message = Message(
+                    message_id=str(uuid.uuid4()),
+                    role=Role.agent,
+                    parts=[response_text]
+                )
+                success_response = SendMessageSuccessResponse(
+                    id=request.id,
+                    result=response_message
+                )
+                return SendMessageResponse(root=success_response)
+        else:
+            # Create proper A2A response message for unrecognized messages
+            response_text = TextPart(text="Message received but not recognized as investigation request")
+            response_message = Message(
+                message_id=str(uuid.uuid4()),
+                role=Role.agent,
+                parts=[response_text]
+            )
+            
+            success_response = SendMessageSuccessResponse(
+                id=request.id,
+                result=response_message
+            )
+            return SendMessageResponse(root=success_response)
+            
+    except Exception as e:
+        logger.error(f"Error processing A2A message: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
+
+
+@app.post("/")
+async def handle_root_a2a_message(request: SendMessageRequest) -> SendMessageResponse:
+    """Handle A2A messages at root endpoint."""
+    return await handle_a2a_message(request)
+
+
+@app.post("/investigate")
+async def investigate_endpoint(transaction_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Direct REST endpoint for investigation requests."""
+    global investigation_service
+    
+    if investigation_service is None:
+        raise HTTPException(status_code=500, detail="Investigation service not initialized")
+    
+    try:
+        result = await investigation_service.investigate_transaction(transaction_data)
+        return result
+    except Exception as e:
+        logger.error(f"Error in investigate endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Investigation failed: {str(e)}")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy", "service": "investigation_agent"}
+
+
+def main():
+    """Entry point for the agent."""
+    logger.info("Starting InvestigationAgent...")
+    try:
+        global investigation_service
+        investigation_service = InvestigationService()
+        logger.info("InvestigationAgent service created successfully")
+        
+        # Start FastAPI A2A server
+        logger.info("Starting A2A server on port 8000...")
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+        
+    except Exception as e:
+        logger.fatal(f"Failed to start InvestigationAgent: {e}", exc_info=True)
+
+
+if __name__ == "__main__":
+    main()
