@@ -1,82 +1,52 @@
 # ==============================================================================
-# Astropods Agent Specification (astropods.yml)
-# AegisPay — Autonomous Multi-Agent Fraud Shield for PayPal Commerce
+# Astropods Blueprint Specification (blueprint/v1)
+# AegisPay — Autonomous Multi-Agent Fraud Defense for PayPal Commerce
 # ==============================================================================
 
-version: "1.0"
-project:
-  name: "aegispay-fraud-defense"
-  description: "Autonomous Multi-Agent AI system detecting and mitigating PayPal fraud in real time."
-  category: "Fintech / Agentic Commerce"
+spec: blueprint/v1
+name: aegispay-fraud-defense
 
-# Runtime Environment Variables
-environment:
-  GEMINI_API_KEY: "${GEMINI_API_KEY}"
-  PAYPAL_CLIENT_ID: "${PAYPAL_CLIENT_ID}"
-  PAYPAL_CLIENT_SECRET: "${PAYPAL_CLIENT_SECRET}"
-  PAYPAL_MODE: "sandbox"
-  FRAUD_THRESHOLD: "1000.0"
-  RISK_SCORE_THRESHOLD: "7.0"
+agent:
+  build:
+    context: .
+    dockerfile: Dockerfile
+  interfaces:
+    frontend: true
+    messaging: true
 
-# Multi-Agent Topology
-agents:
-  - name: "orchestrator-agent"
-    role: "Central Decision & Command Agent"
-    runtime: "python:3.11"
-    entrypoint: "aegispay-system/orchestrator_agent/agent.py"
-    port: 8080
-    model:
-      provider: "google"
-      name: "gemini-2.5-flash"
-    protocol:
-      name: "a2a"
-      type: "json-rpc"
-    delegates:
-      - "investigation-agent"
-      - "actuator-agent"
+models:
+  gemini:
+    provider: google
+    models:
+      - gemini-2.5-flash
 
-  - name: "investigation-agent"
-    role: "Context Detective & Risk Reasoning Agent"
-    runtime: "python:3.11"
-    entrypoint: "aegispay-system/investigation_agent/agent.py"
-    port: 8081
-    model:
-      provider: "google"
-      name: "gemini-2.5-flash"
-    tools:
-      - name: "paypal_get_order_details"
-        source: "apimatic-paypal-context-plugin"
-        endpoint: "/v2/checkout/orders/{order_id}"
-      - name: "paypal_get_transaction_history"
-        source: "apimatic-paypal-context-plugin"
-        endpoint: "/v1/reporting/transactions"
+providers:
+  paypal:
+    scope:
+      - integrations
+    variables:
+      - name: CLIENT_ID
+        datatype: string
+        description: "PayPal Developer Sandbox Client ID"
+      - name: CLIENT_SECRET
+        datatype: string
+        secret: true
+        description: "PayPal Developer Sandbox Client Secret"
+      - name: MODE
+        datatype: string
+        default: "sandbox"
+        description: "PayPal API Mode (sandbox or live)"
 
-  - name: "actuator-agent"
-    role: "Policy Enforcement Officer"
-    runtime: "python:3.11"
-    entrypoint: "aegispay-system/actuator_agent/agent.py"
-    port: 8082
-    tools:
-      - name: "paypal_refund_capture"
-        source: "apimatic-paypal-context-plugin"
-        endpoint: "/v2/payments/captures/{capture_id}/refund"
-      - name: "paypal_void_authorization"
-        source: "apimatic-paypal-context-plugin"
-        endpoint: "/v2/payments/authorizations/{authorization_id}/void"
+integrations:
+  paypal_commerce:
+    provider: paypal
 
-  - name: "transaction-monitor-agent"
-    role: "Continuous Stream Monitor"
-    runtime: "python:3.11"
-    entrypoint: "aegispay-system/transaction_monitor_agent/agent.py"
-    worker:
-      schedule: "poll_interval: 5s"
-      webhook_listener: "/webhooks/paypal"
-
-# Observability & Tracing Configuration
-observability:
-  tracing: true
-  metrics:
-    - latency
-    - risk_score_distribution
-    - fraud_interception_count
-    - token_usage
+ingestion:
+  paypal_fraud_webhook:
+    container:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      port: 8080
+    trigger:
+      type: webhook
