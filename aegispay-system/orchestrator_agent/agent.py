@@ -678,3 +678,201 @@ class OrchestratorService:
                         f"Automatic fallback: risk score {risk_score:.2f} on transaction "
                         f"{transaction_data.get('transaction_id')}"
                     ),
+                    "case_file": case_file,
+                }
+                if ext_user_id:
+                    fallback_payload["ext_user_id"] = ext_user_id
+
+                tool_events.append(
+                    {
+                        "event": "call",
+                        "tool": "ActuatorAgent",
+                        "args": fallback_payload,
+                        "note": "auto_fallback",
+                    }
+                )
+                fallback_response = await delegate_to_actuator_agent(fallback_payload)
+                tool_events.append(
+                    {
+                        "event": "response",
+                        "tool": "ActuatorAgent",
+                        "response": fallback_response,
+                        "note": "auto_fallback",
+                    }
+                )
+
+                fallback_invoked = True
+                actuator_result = fallback_response
+                actuator_result_success = (
+                    isinstance(fallback_response, dict)
+                    and not fallback_response.get("error")
+                )
+                should_actuate = actuator_result_success
+
+                if actuator_result_success:
+                    logger.info(
+                        "Fallback actuator invocation succeeded for session %s (user %s).",
+                        session_id,
+                        user_id,
+                    )
+                else:
+                    fallback_error = str(fallback_response)
+                    logger.error(
+                        "Fallback actuator invocation failed for session %s: %s",
+                        session_id,
+                        fallback_response,
+                    )
+
+        if justification and justification not in summary:
+            summary = f"{summary}\nJustification: {justification}"
+
+        if risk_score is not None:
+            threshold_met = risk_score >= self.risk_threshold
+            if threshold_met and not should_actuate:
+                logger.warning(
+                    "Risk score %.2f meets threshold %.2f but no actuation was recorded.",
+                    risk_score,
+                    self.risk_threshold,
+                )
+            if should_actuate and not threshold_met:
+                logger.warning(
+                    "Actuation executed even though risk score %.2f is below threshold %.2f.",
+                    risk_score,
+                    self.risk_threshold,
+                )
+            if fallback_invoked and actuator_result_success:
+                summary = (
+                    f"{summary}\nAutomatic fallback actuation executed (risk score {risk_score:.2f})."
+                )
+            elif fallback_error:
+                summary = (
+                    f"{summary}\nAutomatic fallback actuation failed: {fallback_error}."
+                )
+
+        logger.info(
+            "Orchestration completed for session %s (user %s). should_actuate=%s",
+            session_id,
+            user_id,
+            should_actuate,
+        )
+
+        response_payload: dict[str, Any] = {
+            "status": "completed",
+            "summary": summary,
+            "session_id": session_id,
+            "user_id": user_id,
+            "risk_threshold": self.risk_threshold,
+            "tool_events": tool_events,
+        }
+
+        if risk_score is not None:
+            response_payload["risk_score"] = risk_score
+        if justification:
+            response_payload["justification"] = justification
+        if account_id:
+            response_payload["account_id"] = account_id
+        if ext_user_id:
+            response_payload["ext_user_id"] = ext_user_id
+        if investigation_result is not None:
+            response_payload["investigation_result"] = investigation_result
+        if actuator_result is not None:
+            response_payload["actuator_result"] = actuator_result
+        response_payload["should_actuate"] = should_actuate
+
+        return response_payload
+
+
+# A2A FastAPI endpoints
+@app.post("/a2a/send-message")
+async def handle_a2a_message(request: SendMessageRequest) -> SendMessageResponse:
+    """Handle incoming A2A messages from other agents."""
+    global orchestrator_service
+    
+    if orchestrator_service is None:
+        raise HTTPException(status_code=500, detail="Orchestrator service not initialized")
+    
+    try:
+        # Extract message text from A2A message parts
+        message_text = ""
+        if hasattr(request, 'params') and request.params:
+            if hasattr(request.params, 'message') and request.params.message:
+                if hasattr(request.params.message, 'parts') and request.params.message.parts:
+                    for part in request.params.message.parts:
+                        # Part has a 'root' attribute containing the TextPart
+                        if hasattr(part, 'root') and hasattr(part.root, 'text'):
+                            message_text = part.root.text
+                            break
+        
+        logger.info(f"Received A2A message: {message_text}")
+        
+        # Parse the transaction data from the message
+        if "Process transaction alert:" in message_text:
+            transaction_json = message_text.replace("Process transaction alert: ", "")
+            transaction_data = json.loads(transaction_json)
+            
+            # Process the transaction alert
+            result = await orchestrator_service.process_transaction_alert(transaction_data)
+            
+            # Create proper A2A response message
+            response_text = TextPart(text=f"Transaction alert processed: {json.dumps(result)}")
+            response_message = Message(
+                message_id=str(uuid.uuid4()),
+                role=Role.agent,
+                parts=[response_text]
+            )
+            
+            # Return proper A2A success response
+            success_response = SendMessageSuccessResponse(
+                id=request.id,
+                result=response_message
+            )
+            return SendMessageResponse(root=success_response)
+        else:
+            # Create proper A2A response message for unrecognized messages
+            response_text = TextPart(text="Message received but not recognized as transaction alert")
+            response_message = Message(
+                message_id=str(uuid.uuid4()),
+                role=Role.agent,
+                parts=[response_text]
+            )
+            
+            success_response = SendMessageSuccessResponse(
+                id=request.id,
+                result=response_message
+            )
+            return SendMessageResponse(root=success_response)
+            
+    except Exception as e:
+        logger.error(f"Error processing A2A message: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
+
+
+@app.post("/")
+async def handle_root_a2a_message(request: SendMessageRequest) -> SendMessageResponse:
+    """Handle A2A messages at root endpoint."""
+    return await handle_a2a_message(request)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy", "service": "orchestrator_agent"}
+
+
+def main():
+    """Entry point for the agent."""
+    logger.info("Starting OrchestratorAgent...")
+    try:
+        global orchestrator_service
+        orchestrator_service = OrchestratorService()
+        logger.info("OrchestratorAgent service created successfully")
+        
+        # Start FastAPI A2A server
+        logger.info("Starting A2A server on port 8000...")
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+        
+    except Exception as e:
+        logger.fatal(f"Failed to start OrchestratorAgent: {e}", exc_info=True)
+
+
+if __name__ == "__main__":
+    main()
