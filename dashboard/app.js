@@ -351,11 +351,132 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize AG Grid
   gridApi = agGrid.createGrid(gridDiv, gridOptions);
 
-  // Setup Event Listeners
+  // Setup Event Listeners & Real-Time Backend Connection
   setupEventListeners();
   updateKpiDisplay();
+  initSSEConnection();
   logTerminal("AegisPay AG Grid Real-Time Dashboard connected.", "system");
 });
+
+/* --------------------------------------------------------------------------
+   Real-Time Backend SSE Stream & Connection
+   -------------------------------------------------------------------------- */
+const BACKEND_URL = "http://localhost:8085";
+let sseConnection = null;
+let isSentinelRunning = false;
+let sentinelInterval = null;
+
+function initSSEConnection() {
+  const statusTag = document.getElementById("backendStatusTag");
+  const statusText = document.getElementById("backendStatusText");
+
+  try {
+    sseConnection = new EventSource(`${BACKEND_URL}/events/stream`);
+
+    sseConnection.onopen = () => {
+      if (statusTag) statusTag.classList.remove("offline");
+      if (statusText) statusText.innerText = "Backend Live (Port 8085)";
+      logTerminal("[SYSTEM] Connected to live AegisPay Multi-Agent SSE stream.", "system");
+    };
+
+    sseConnection.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        handleIncomingBackendEvent(payload);
+      } catch (err) {
+        console.error("Error parsing SSE event data:", err);
+      }
+    };
+
+    sseConnection.onerror = () => {
+      if (statusTag) statusTag.classList.add("offline");
+      if (statusText) statusText.innerText = "Backend Offline (Local Mode)";
+    };
+  } catch (err) {
+    if (statusTag) statusTag.classList.add("offline");
+    if (statusText) statusText.innerText = "Backend Offline (Local Mode)";
+  }
+}
+
+function handleIncomingBackendEvent(data) {
+  const orderId = data.order_id || `5O${Math.floor(100000 + Math.random() * 900000)}`;
+  const riskScore = parseFloat(data.risk_score || 0.0);
+  const shouldActuate = !!data.should_actuate;
+  const analysis = data.investigation_result?.fraud_analysis || {};
+  const txData = data.transaction_data || {};
+  const purchaseUnits = txData.purchase_units || [{}];
+  const rawAmt = purchaseUnits[0]?.amount?.value || txData.amount || 150.00;
+  const amount = parseFloat(rawAmt);
+  const payer = txData.payer || {};
+  const customerName = payer.name ? `${payer.name.given_name || ''} ${payer.name.surname || ''}`.trim() || "PayPal Customer" : "PayPal Customer";
+  const email = payer.email_address || "buyer@sandbox.paypal.com";
+  const payerId = payer.payer_id || `PAYER-${Math.floor(100000 + Math.random() * 900000)}`;
+  const item = purchaseUnits[0]?.items?.[0]?.name || "Retail Merchandise";
+  const location = purchaseUnits[0]?.shipping?.address ? `${purchaseUnits[0].shipping.address.admin_area_2 || ''}, ${purchaseUnits[0].shipping.address.country_code || 'US'}` : "PayPal Verified";
+  
+  let status = "Approved";
+  if (shouldActuate) {
+    status = data.actuator_result?.action === "void_authorization" ? "Voided (PayPal)" : "Auto-Refunded (PayPal)";
+  } else if (riskScore >= 4.0) {
+    status = "Under Review";
+  }
+
+  // Log steps to terminal
+  logTerminal(`[PayPal Stream] Ingested order ${orderId} (${customerName}, $${amount.toFixed(2)} USD).`, "monitor");
+  setTimeout(() => {
+    logTerminal(`[Orchestrator] Dispatched to InvestigationAgent. Gemini 2.5 Flash Risk Score: ${riskScore.toFixed(1)}/10.0.`, "investigation");
+  }, 300);
+
+  if (shouldActuate) {
+    setTimeout(() => {
+      logTerminal(`[ActuatorAgent] Risk >= 7.0! Executed PayPal Payments v2 ${data.actuator_result?.action || 'refund_capture'} on ${orderId}.`, "actuator");
+    }, 600);
+  }
+
+  const row = {
+    id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+    timestamp: new Date().toLocaleTimeString(),
+    orderId: orderId,
+    customer: customerName,
+    email: email,
+    account: payerId,
+    amount: amount,
+    category: item,
+    location: location,
+    riskScore: riskScore,
+    status: status,
+    justification: data.justification || analysis.justification || "AegisPay swarm fraud evaluation completed.",
+    factors: data.signals || analysis.signals || ["PayPal Commerce Inspection"],
+    rawJson: data
+  };
+
+  // Update KPI Metrics
+  kpiState.totalVolume += amount;
+  kpiState.totalTransactions += 1;
+  if (shouldActuate) {
+    kpiState.fraudIntercepted += amount;
+    kpiState.attacksCount += 1;
+  }
+  updateKpiDisplay();
+
+  // Apply row to AG Grid table with live animation
+  if (gridApi) {
+    gridApi.applyTransaction({ add: [row], addIndex: 0 });
+  }
+}
+
+async function triggerBackendScenario(scenarioName, fallbackFn) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/simulate-scenario/${scenarioName}`, { method: "POST" });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    // Event will arrive via SSE stream automatically!
+  } catch (err) {
+    console.warn(`Backend call failed (${err.message}), using client-side fallback.`);
+    if (fallbackFn) fallbackFn();
+  }
+}
 
 /* --------------------------------------------------------------------------
    Event Listeners & Controls
@@ -379,22 +500,56 @@ function setupEventListeners() {
     }
   });
 
-  // Scenario Buttons
+  // Scenario Buttons (Connected to live backend)
   document.getElementById("simNormalBtn").addEventListener("click", () => {
-    simulateTransaction("Sarah Taylor", 45.00, "Online Bookstore", "Safe Grocery Purchase", 1.2, "Approved");
+    triggerBackendScenario("legitimate_order", () => {
+      simulateTransaction("Sarah Taylor", 45.00, "Online Bookstore", "Safe Grocery Purchase", 1.2, "Approved");
+    });
   });
 
   document.getElementById("simMediumBtn").addEventListener("click", () => {
-    simulateTransaction("Robert Garcia", 1499.00, "Electronics & Laptops", "High-Value Laptop", 5.6, "Under Review");
+    triggerBackendScenario("chargeback_exploit", () => {
+      simulateTransaction("Robert Garcia", 899.00, "Electronics & Laptops", "High-Value Laptop", 5.6, "Under Review");
+    });
   });
 
   document.getElementById("simFraudBtn").addEventListener("click", () => {
-    simulateTransaction("Phantom Buyer 0x99", 4850.00, "Digital Gift Cards", "Compromised Account Takeover", 9.4, "Auto-Refunded (PayPal)");
+    triggerBackendScenario("account_takeover", () => {
+      simulateTransaction("Phantom Buyer 0x99", 3499.00, "Apple MacBook Pro 16", "Compromised Account Takeover", 9.4, "Auto-Refunded (PayPal)");
+    });
   });
 
   document.getElementById("simVelocityBtn").addEventListener("click", () => {
-    simulateVelocityBurst();
+    triggerBackendScenario("card_testing_bot", () => {
+      simulateVelocityBurst();
+    });
   });
+
+  // Live Stream Sentinel Toggle Button
+  const toggleSentinelBtn = document.getElementById("toggleSentinelBtn");
+  const sentinelBtnText = document.getElementById("sentinelBtnText");
+  if (toggleSentinelBtn) {
+    toggleSentinelBtn.addEventListener("click", () => {
+      isSentinelRunning = !isSentinelRunning;
+      if (isSentinelRunning) {
+        sentinelBtnText.innerText = "Stop Live Stream";
+        toggleSentinelBtn.classList.remove("btn-outline-primary");
+        toggleSentinelBtn.classList.add("btn-outline-danger");
+        logTerminal("[SENTINEL] Live commerce stream activated (6s intervals).", "monitor");
+        sentinelInterval = setInterval(() => {
+          const scenarios = ["legitimate_order", "legitimate_order", "account_takeover", "card_testing_bot"];
+          const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
+          triggerBackendScenario(pick);
+        }, 6000);
+      } else {
+        sentinelBtnText.innerText = "Start Live Stream";
+        toggleSentinelBtn.classList.remove("btn-outline-danger");
+        toggleSentinelBtn.classList.add("btn-outline-primary");
+        if (sentinelInterval) clearInterval(sentinelInterval);
+        logTerminal("[SENTINEL] Live commerce stream paused.", "system");
+      }
+    });
+  }
 
   // Custom Simulation Modal Controls
   const customModal = document.getElementById("customSimModal");
@@ -410,25 +565,39 @@ function setupEventListeners() {
     customModal.classList.add("hidden");
   });
 
-  document.getElementById("customTxForm").addEventListener("submit", (e) => {
+  document.getElementById("customTxForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("custName").value;
     const amount = parseFloat(document.getElementById("custAmount").value);
     const category = document.getElementById("custItem").value;
     const location = document.getElementById("custLocation").value;
 
-    let score = 2.0;
-    let status = "Approved";
+    const customPayload = {
+      id: `5O${Math.floor(100000 + Math.random() * 900000)}TN${Math.floor(100000 + Math.random() * 900000)}`,
+      intent: amount >= 3000 ? "CAPTURE" : "AUTHORIZE",
+      amount: amount,
+      payer: {
+        email_address: document.getElementById("custAccount").value,
+        name: { given_name: name.split(" ")[0] || "Custom", surname: name.split(" ")[1] || "Buyer" }
+      },
+      purchase_units: [
+        {
+          amount: { value: amount.toFixed(2), currency_code: "USD" },
+          items: [{ name: category, quantity: "1", unit_amount: { value: amount.toFixed(2), currency_code: "USD" } }],
+          shipping: { address: { admin_area_2: location, country_code: location.toLowerCase().includes("romania") ? "RO" : "US" } }
+        }
+      ]
+    };
 
-    if (amount > 3000 || location.toLowerCase().includes("proxy")) {
-      score = 8.8;
-      status = "Auto-Refunded (PayPal)";
-    } else if (amount > 1000) {
-      score = 5.2;
-      status = "Under Review";
+    try {
+      await fetch(`${BACKEND_URL}/process-transaction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(customPayload)
+      });
+    } catch (err) {
+      simulateTransaction(name, amount, category, `Custom transaction from ${location}`, amount > 2000 ? 8.8 : 2.1, amount > 2000 ? "Auto-Refunded (PayPal)" : "Approved");
     }
-
-    simulateTransaction(name, amount, category, `Custom transaction from ${location}`, score, status);
     customModal.classList.add("hidden");
   });
 
@@ -442,7 +611,7 @@ function setupEventListeners() {
   });
 
   document.getElementById("modalActionLockBtn").addEventListener("click", () => {
-    alert("AegisPay Actuator: Account locked. Security status set to ACCOUNT_LOCKED_BY_AEGISPAY.");
+    alert("AegisPay Actuator: Payment authorization voided on PayPal.");
     closeCaseFileModal();
   });
 
@@ -459,7 +628,7 @@ function setupEventListeners() {
 }
 
 /* --------------------------------------------------------------------------
-   Simulated Transaction Pipeline (A2A Agent Swarm)
+   Simulated Transaction Pipeline (Fallback)
    -------------------------------------------------------------------------- */
 function simulateTransaction(customerName, amount, category, description, riskScore, status) {
   const orderNum = Math.floor(1000 + Math.random() * 9000);
@@ -467,22 +636,19 @@ function simulateTransaction(customerName, amount, category, description, riskSc
   const timeStr = now.toTimeString().split(" ")[0];
   const txId = `tx_${Date.now()}`;
 
-  // Log Step 1: Ingestion
   logTerminal(`[PayPal Webhook] Ingested order #PP-2026-${orderNum} for ${customerName} ($${amount.toFixed(2)} USD).`, "monitor");
 
   setTimeout(() => {
-    // Log Step 2: Orchestration
     logTerminal(`[Orchestrator] Evaluated #PP-2026-${orderNum}. Dispatching A2A task to InvestigationAgent.`, "orchestrator");
   }, 400);
 
   setTimeout(() => {
-    // Log Step 3: Investigation
     logTerminal(`[InvestigationAgent] Gemini 2.5 Flash reasoned: Score ${riskScore}/10.0. Factors: ${category}.`, "investigation");
   }, 900);
 
   setTimeout(() => {
     if (riskScore >= 7.0) {
-      logTerminal(`[ActuatorAgent] RISK >= 7.0 TRIGGERED! Executing PayPal Refund on order #PP-2026-${orderNum}.`, "actuator");
+      logTerminal(`[ActuatorAgent] RISK >= 7.0 TRIGGERED! Executed PayPal Payments v2 Refund on order #PP-2026-${orderNum}.`, "actuator");
       kpiState.fraudIntercepted += amount;
       kpiState.attacksCount += 1;
     }
@@ -513,7 +679,6 @@ function simulateTransaction(customerName, amount, category, description, riskSc
       }
     };
 
-    // Update KPI state
     kpiState.totalVolume += amount;
     kpiState.totalTransactions += 1;
     updateKpiDisplay();

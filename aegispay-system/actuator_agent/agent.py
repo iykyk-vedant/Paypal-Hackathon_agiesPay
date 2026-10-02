@@ -9,6 +9,9 @@ import uuid
 import asyncio
 from typing import Dict, Any, Optional
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
 import uvicorn
 

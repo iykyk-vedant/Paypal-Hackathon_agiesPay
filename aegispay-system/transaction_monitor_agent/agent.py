@@ -11,6 +11,9 @@ import json
 import random
 from typing import Dict, Any, Optional
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 import uvicorn
 import httpx

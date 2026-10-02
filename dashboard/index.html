@@ -116,11 +116,17 @@
           <i class="fa-solid fa-user-ninja"></i> Account Takeover ($4,850.00)
         </button>
         <button id="simVelocityBtn" class="btn btn-outline-purple">
-          <i class="fa-solid fa-gauge-high"></i> Velocity Burst (3 Rapid Orders)
+          <i class="fa-solid fa-gauge-high"></i> Bot Burst ($1.28)
+        </button>
+        <button id="toggleSentinelBtn" class="btn btn-outline-primary">
+          <i class="fa-solid fa-tower-broadcast"></i> <span id="sentinelBtnText">Start Live Stream</span>
         </button>
       </div>
 
       <div class="grid-controls">
+        <div class="backend-status-tag" id="backendStatusTag">
+          <span class="status-dot green"></span> <span id="backendStatusText">Backend Online (Port 8085)</span>
+        </div>
         <div class="search-input-wrapper">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
           <input type="text" id="quickFilterInput" placeholder="Search orders, customers, status..." />

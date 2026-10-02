@@ -869,3 +869,35 @@ h1, h2, h3, h4 {
   padding: 14px 0 0 0;
   border-top: 1px solid var(--border-subtle);
 }
+
+.backend-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34D399;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.backend-status-tag.offline {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #F87171;
+}
+
+.btn-outline-primary {
+  background: rgba(0, 112, 224, 0.12);
+  border: 1px solid rgba(0, 112, 224, 0.4);
+  color: #38BDF8;
+}
+
+.btn-outline-primary:hover {
+  background: var(--paypal-blue);
+  color: #fff;
+  border-color: var(--paypal-blue);
+}
