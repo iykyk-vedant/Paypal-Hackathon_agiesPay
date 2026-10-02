@@ -240,10 +240,42 @@ async def process_transaction_endpoint(transaction: Dict[str, Any]) -> Dict[str,
 
 @app.post("/simulate-scenario/{scenario_name}")
 async def simulate_scenario_endpoint(scenario_name: str) -> Dict[str, Any]:
-    """Generates a scenario (ACCOUNT_TAKEOVER, CARD_TESTING_BOT, etc.) and routes it."""
+    """Generates a scenario (ACCOUNT_TAKEOVER, CARD_TESTING_BOT, PRICE_TAMPERING, etc.) and routes it."""
     global orchestrator_service
     if orchestrator_service is None:
         orchestrator_service = OrchestratorService()
+
+    if scenario_name.lower() in ("price_tampering", "cart_tampering"):
+        order = {
+            "id": f"5O{uuid.uuid4().hex[:14].upper()}",
+            "intent": "CAPTURE",
+            "status": "APPROVED",
+            "payer": {
+                "payer_id": f"PAYER-{uuid.uuid4().hex[:8].upper()}",
+                "name": {"given_name": "TamperBot", "surname": "Session_X"},
+                "email_address": "exploit_user@darknet-market.org",
+            },
+            "purchase_units": [
+                {
+                    "reference_id": "PU-TAMPER-01",
+                    "amount": {"currency_code": "USD", "value": "149.00"},
+                    "description": "Exploit: $3,499 MacBook cart price slashed to $149",
+                    "items": [
+                        {
+                            "name": "Apple MacBook Pro 16",
+                            "unit_amount": {"currency_code": "USD", "value": "149.00"},
+                            "quantity": "1",
+                            "category": "PHYSICAL_GOODS",
+                        }
+                    ],
+                    "shipping": {
+                        "address": {"admin_area_2": "Miami", "country_code": "US"}
+                    },
+                }
+            ],
+            "create_time": "2026-10-03T03:30:00Z",
+        }
+        return await orchestrator_service.process_transaction_alert(order)
 
     from paypal import FraudScenario
     try:

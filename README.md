@@ -2,6 +2,8 @@
 
 [![PayPal Sandbox](https://img.shields.io/badge/PayPal-Orders%20%26%20Payments%20v2-00457C?style=flat-square&logo=paypal&logoColor=white)](https://developer.paypal.com)
 [![AG Grid Enterprise](https://img.shields.io/badge/AG%20Grid-Enterprise%20Quartz%20Dark-FD1D7C?style=flat-square&logo=ag-grid&logoColor=white)](https://www.ag-grid.com/)
+[![Bryntum](https://img.shields.io/badge/Bryntum-Scheduler%20Dispute%20Horizon-4F46E5?style=flat-square)](https://bryntum.com/)
+[![Channel3](https://img.shields.io/badge/Channel3-Product%20Data%20%26%20FMV-10B981?style=flat-square)](Docs/CHANNEL3_INTEGRATION.md)
 [![Render](https://img.shields.io/badge/Render-Blueprint%20IaC-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com)
 [![APIMatic](https://img.shields.io/badge/APIMatic-Context%20Plugin-0B78E3?style=flat-square)](Docs/APIMATIC_USAGE.md)
 [![Astropods](https://img.shields.io/badge/Astropods-Agent%20Blueprint-9B51E0?style=flat-square)](AGENT.md)
@@ -93,6 +95,16 @@ All surveillance telemetry is broadcast live via Server-Sent Events (SSE) into a
 - **Infrastructure as Code**: Production-grade [`render.yaml`](render.yaml) Blueprint.
 - **Multi-Service Architecture**: Deploys the Python FastAPI swarm backend (`aegispay-swarm-api`) and the static AG Grid frontend (`aegispay-dashboard`).
 - **Health Checks & Rolling Deploys**: Integrated `/health` checks ensure zero downtime during policy and model updates. See [`Docs/RENDER_DEPLOYMENT.md`](Docs/RENDER_DEPLOYMENT.md).
+
+### 6. Bryntum Scheduler ("Best Use of Bryntum" Sponsor Award)
+- **Interactive Dispute & Deadline Horizon**: High-performance Bryntum Scheduler component (`dashboard/bryntum-scheduler.js`) built with the Stockholm Dark theme.
+- **Swarm Resource Timeline**: Tracks live resolution allocations across Gemini AI agents and PayPal dispute specialists.
+- **Real-Time Streaming**: Automatically plots dispute windows and deadline alerts as transactions stream in from PayPal.
+
+### 7. Channel3 ("Best Use of Channel3" - $2,500 Sponsor Award)
+- **Fair Market Value (FMV) Verification**: Integrates Channel3 E-Commerce API (`aegispay-system/channel3/client.py`) across 100M+ products from 25,000+ retailers.
+- **Cart Price Tampering Shield**: Detects client-side DOM price tampering (e.g. slashing a $3,499 MacBook Pro to $149) with sub-second precision.
+- **Case File Product Card**: Visualizes verified brand, normalized retailer price, and variance pills inside the dashboard case file drawer. See [`Docs/CHANNEL3_INTEGRATION.md`](Docs/CHANNEL3_INTEGRATION.md).
 
 ---
 

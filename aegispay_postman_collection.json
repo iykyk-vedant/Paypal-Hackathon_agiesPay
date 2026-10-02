@@ -257,6 +257,19 @@
           }
         },
         {
+          "name": "Simulate Scenario — Channel3 Cart Price Tampering ($149 vs $3,499)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/simulate-scenario/price_tampering",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["simulate-scenario", "price_tampering"]
+            },
+            "description": "Simulates cart price tampering where an attacker slashes a $3,499 MacBook Pro down to $149 in a hacked checkout session. Channel3 API detects -95.7% variance."
+          }
+        },
+        {
           "name": "Live Real-Time Stream (SSE)",
           "request": {
             "method": "GET",

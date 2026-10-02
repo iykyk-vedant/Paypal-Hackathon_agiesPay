@@ -722,6 +722,169 @@ h1, h2, h3, h4 {
 .info-val.highlight { color: #38BDF8; font-size: 14px; font-weight: 700; }
 .info-val.code { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
 
+/* Channel3 Product Intelligence & FMV Card */
+.channel3-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 27, 75, 0.4));
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.channel3-card.hidden {
+  display: none !important;
+}
+
+.channel3-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.channel3-brand-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #38BDF8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tamper-alert-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tamper-alert-pill.danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  animation: pulseWarning 2s infinite;
+}
+.tamper-alert-pill.safe {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+@keyframes pulseWarning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.channel3-content {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.channel3-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #020617;
+  flex-shrink: 0;
+}
+
+.channel3-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.ch3-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F8FAFC;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ch3-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.ch3-meta strong {
+  color: #CBD5E1;
+}
+
+.price-comparison-grid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.price-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.price-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.price-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.price-val.tampered {
+  color: #EF4444;
+  text-decoration: line-through;
+}
+
+.price-val.market {
+  color: #38BDF8;
+}
+
+.price-arrow {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.variance-badge {
+  color: #EF4444 !important;
+  font-size: 11px;
+  background: rgba(239, 68, 68, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.ch3-footer-note {
+  font-size: 10.5px;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
 /* Investigation Breakdown */
 .investigation-breakdown {
   background: #090E1A;

@@ -41,32 +41,45 @@
 
 ---
 
-### [1:00 – 1:30] Case File Inspection & Bot Mitigation
-* **On Screen**: Click on the new high-risk row in the AG Grid table. The **Gemini AI Case File Drawer** smoothly slides in from the right. Then click **`[Bot Burst ($1.28)]`**.
+### [1:00 – 1:30] Channel3 Fair Market Value Shield (Cart Price Tampering)
+* **On Screen**: Click **`[🏷️ Price Tampering ($149 vs $3,499)]`**. The transaction immediately appears in AG Grid as auto-refunded. Click the row to open the Gemini Case File Drawer, focusing on the glowing **Channel3 Product Intelligence** card.
 * **Voiceover**:
-  > *"Clicking any row opens the deep Gemini AI Case File. Merchants can inspect plain-English reasoning, specific risk factor tags, and the exact PayPal API transaction payload.*
+  > *"Here's something revolutionary: we integrated Channel3's clean product API across 100M+ items to combat client-side DOM Cart Price Slashing.*
   > 
-  > *Next, let's trigger a Card Testing Bot attack. AegisPay catches the rapid microtransaction burst and disposable burner domain, and automatically executes a PayPal Payments v2 `void_authorization` — shutting down the bot without any manual human intervention required."*
+  > *Watch: an attacker manipulated their cart, buying a $3,499.00 Apple MacBook Pro for just $149.00.*
+  > 
+  > *In under a second, AegisPay queries Channel3, verifies the true Fair Market Value across 25,000+ retailers, detects the devastating -95.7% variance, and executes an instant PayPal Payments v2 refund before the warehouse ships the computer!"*
 
 ---
 
-### [1:30 – 1:55] Zero-Friction Legitimate Purchases & CSV Export
+### [1:30 – 1:55] Bryntum Dispute Horizon & Bot Mitigation
+* **On Screen**: Switch to the **`[Bryntum Dispute Triage & Deadline Horizon]`** tab. Point out the interactive timeline, resources, and live dispute cards. Then switch back to AG Grid and trigger **`[Bot Burst ($1.28)]`**.
+* **Voiceover**:
+  > *"Clicking the Bryntum view switches to our interactive Dispute Triage & Deadline Horizon. Built on Bryntum Scheduler Stockholm Dark, it plots active dispute windows, evidence submission deadlines, and swarm workload across AI agents and human dispute specialists.*
+  > 
+  > *Next, triggering a Card Testing Bot attack executes an autonomous PayPal `void_authorization`, neutralizing the bot burst with zero human delay."*
+
+---
+
+### [1:55 – 2:15] Legitimate Purchases & CSV Compliance Export
 * **On Screen**: Click **`[Normal Order ($45.00)]`**. Show it clearing instantly with a green badge (1.2/10). Then click **`[Export CSV]`** and show the downloaded CSV.
 * **Voiceover**:
-  > *"When a legitimate verified buyer makes a purchase, AegisPay clears it in milliseconds with a risk score of 1.2 — ensuring zero friction for honest customers.*
+  > *"When an honest buyer purchases an item, AegisPay clears it in milliseconds with a risk score of 1.2 — ensuring zero friction for legitimate commerce.*
   > 
-  > *Fraud analysts can filter the entire surveillance stream and export audit-ready CSV reports with a single click via AG Grid's native export API."*
+  > *Compliance teams can export audit-ready CSV logs instantly with AG Grid's native client-side export."*
 
 ---
 
-### [1:55 – 2:15] Sponsor Integration Summary & Conclusion
-* **On Screen**: Show the `render.yaml`, `astropods.yml`, and `.apimatic/` folders in VS Code or GitHub.
+### [2:15 – 2:35] Sponsor Integration Summary & Conclusion
+* **On Screen**: Show the `render.yaml`, `astropods.yml`, `dashboard/bryntum-scheduler.js`, `channel3/client.py`, and `.apimatic/` folders in VS Code or GitHub.
 * **Voiceover**:
-  > *"AegisPay is production-ready across all 5 hackathon sponsor platforms:
-  > - Direct PayPal Orders v2 and Payments v2 REST client with live sandbox credentials;
-  > - High-performance AG Grid Enterprise Quartz Dark dashboard;
-  > - One-click cloud deployment on Render via `render.yaml`;
-  > - APIMatic OpenAPI context plugin for hallucination-free reasoning; and
-  > - Astropods containerized agent blueprint.*
+  > *"AegisPay delivers deep, native integration across all 7 hackathon platforms:
+  > - PayPal Orders v2 & Payments v2 Sandbox REST API;
+  > - AG Grid Enterprise Quartz Dark real-time surveillance;
+  > - Bryntum Scheduler dispute triage & deadline horizon;
+  > - Channel3 100M+ product catalog for cart price slashing detection;
+  > - Render Infrastructure-as-Code Blueprint (`render.yaml`);
+  > - APIMatic OpenAPI context plugin; and
+  > - Astropods containerized multi-agent blueprint.*
   > 
   > *Thank you, and welcome to the future of autonomous merchant trust with AegisPay!"*

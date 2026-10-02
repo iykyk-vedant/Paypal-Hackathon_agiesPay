@@ -18,6 +18,7 @@ import uvicorn
 # Ensure paypal client module is reachable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from paypal import PayPalClient
+from channel3 import Channel3Client
 
 try:
     from google.adk.agents import LlmAgent
@@ -79,6 +80,8 @@ class InvestigationService:
             and len(self.gemini_api_key) > 15
         )
 
+        self.channel3_client = Channel3Client()
+
         if self.has_llm:
             try:
                 self.llm_agent = LlmAgent(
@@ -125,13 +128,27 @@ class InvestigationService:
         risk_signals = self.paypal_client.extract_risk_signals(order_details)
         disputes = self.paypal_client.list_disputes()
 
-        # 3. LLM or Heuristic Reasoning
+        # 3. Channel3 Product Intelligence & Fair Market Value (FMV) Verification
+        items = order_details.get("purchase_units", [{}])[0].get("items", [])
+        item_name = items[0].get("name") if items else transaction_data.get("category", "Retail Merchandise")
+        amount = risk_signals.get("amount_usd", 0.0)
+        channel3_fmv = self.channel3_client.verify_fair_market_value(item_name, amount)
+
+        if channel3_fmv.get("is_tampered"):
+            tamper_msg = (
+                f"CHANNEL3_PRICE_TAMPERING: Cart price (${amount:.2f}) deviates by {channel3_fmv['variance_pct']}% "
+                f"from Channel3 Fair Market Value (${channel3_fmv['market_price']:.2f} for '{channel3_fmv['verified_title']}')"
+            )
+            risk_signals.setdefault("signals_detected", []).append(tamper_msg)
+
+        # 4. LLM or Heuristic Reasoning
         analysis: Dict[str, Any] = {}
         if self.has_llm:
             prompt = (
                 "Please investigate this PayPal transaction for fraud:\n"
                 f"Order Details:\n{json.dumps(order_details, indent=2)}\n\n"
                 f"Extracted Risk Signals:\n{json.dumps(risk_signals, indent=2)}\n\n"
+                f"Channel3 Product Data:\n{json.dumps(channel3_fmv, indent=2)}\n\n"
                 f"Recent Disputes Context:\n{json.dumps(disputes, indent=2)}\n\n"
                 "Provide your risk assessment as JSON."
             )
@@ -163,9 +180,9 @@ class InvestigationService:
                 logger.info("Gemini 2.5 Flash investigation completed for %s: %s", order_id, analysis)
             except Exception as e:
                 logger.warning("LLM reasoning fallback: %s", e)
-                analysis = self._compute_heuristic_analysis(order_details, risk_signals)
+                analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv)
         else:
-            analysis = self._compute_heuristic_analysis(order_details, risk_signals)
+            analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv)
 
         case_file = {
             "order_id": order_id,
@@ -173,19 +190,31 @@ class InvestigationService:
             "paypal_order_details": order_details,
             "risk_signals": risk_signals,
             "disputes_context": disputes,
+            "channel3_product_data": channel3_fmv,
             "fraud_analysis": analysis,
         }
         return case_file
 
     def _compute_heuristic_analysis(
-        self, order_details: Dict[str, Any], risk_signals: Dict[str, Any]
+        self, order_details: Dict[str, Any], risk_signals: Dict[str, Any], channel3_fmv: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """APIMatic-grounded deterministic risk reasoning."""
+        """APIMatic-grounded & Channel3-verified deterministic risk reasoning."""
         signals = risk_signals.get("signals_detected", [])
         amount = risk_signals.get("amount_usd", 0.0)
         sig_count = len(signals)
 
-        if sig_count >= 2 or amount >= 3000.0:
+        # High priority check: Channel3 Price Tampering
+        if channel3_fmv and channel3_fmv.get("is_tampered"):
+            score = 9.8
+            level = "CRITICAL"
+            action = "REFUND_CAPTURE" if order_details.get("intent") == "CAPTURE" else "VOID_AUTHORIZATION"
+            justification = (
+                f"Channel3 Product Intelligence Alert: Cart Price Tampering detected! "
+                f"Order charged ${amount:.2f} for '{channel3_fmv.get('verified_title')}' (Verified Market Value: "
+                f"${channel3_fmv.get('market_price'):.2f}, Variance: {channel3_fmv.get('variance_pct')}%). "
+                f"Immediate PayPal Payments v2 {action.lower()} executed."
+            )
+        elif sig_count >= 2 or amount >= 3000.0:
             score = 9.4
             level = "CRITICAL"
             action = "REFUND_CAPTURE" if order_details.get("intent") == "CAPTURE" else "VOID_AUTHORIZATION"
@@ -206,8 +235,8 @@ class InvestigationService:
             level = "LOW"
             action = "APPROVE"
             justification = (
-                "Verified commerce transaction with zero risk anomalies. Buyer tenure and billing "
-                "address match PayPal Seller Protection criteria."
+                "Verified commerce transaction with zero risk anomalies. Buyer tenure, billing address, "
+                "and Channel3 Fair Market Value match PayPal Seller Protection criteria."
             )
 
         return {

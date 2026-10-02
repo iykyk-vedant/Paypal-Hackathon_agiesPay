@@ -71,6 +71,16 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 ### 5. Astropods ($5,000 Sponsor Award)
 - Validated containerized blueprint ([`astropods.yml`](astropods.yml)) and production agent card ([`AGENT.md`](AGENT.md)) authenticated and ready via `ast 0.27.0`.
 
+### 6. Bryntum Scheduler ("Best Use of Bryntum" Sponsor Award)
+- Embedded Bryntum Scheduler component (`dashboard/bryntum-scheduler.js`) providing an interactive Dispute Triage & Deadline Horizon view.
+- Real-time resource timeline tracking allocations across Gemini AI agents and PayPal human dispute specialists.
+- Dynamic dispute event plotting as transactions stream in from the live PayPal sentinel.
+
+### 7. Channel3 ("Best Use of Channel3" - $2,500 Sponsor Award)
+- Integrated Channel3 E-Commerce API (`aegispay-system/channel3/client.py`) across 100M+ products from 25,000+ retailers.
+- Fair Market Value (FMV) verification detecting client-side DOM Cart Price Slashing (e.g. $3,499 MacBook Pro slashed to $149).
+- Instant PayPal Payments v2 refund mitigation and dedicated Product Intelligence inspection drawer. Detailed in [`Docs/CHANNEL3_INTEGRATION.md`](Docs/CHANNEL3_INTEGRATION.md).
+
 ---
 
 ## 🛠️ How We Built It
@@ -78,7 +88,8 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 - **Backend Swarm**: Python 3.10, FastAPI, Uvicorn, asyncio, HTTPX, Google ADK.
 - **AI Reasoning**: Google Gemini 2.5 Flash (`google-genai` SDK).
 - **Payment Engine**: Native Python PayPal REST Client (`aegispay-system/paypal/client.py`).
-- **Frontend & Surveillance**: AG Grid Enterprise v31+ (Quartz Dark), HTML5, Vanilla CSS, Server-Sent Events (SSE).
+- **Product Intelligence**: Channel3 Product API (100M+ products, 25,000+ retailers).
+- **Frontend & Surveillance**: AG Grid Enterprise v32+ (Quartz Dark), Bryntum Scheduler (Stockholm Dark), HTML5, Vanilla CSS, Server-Sent Events (SSE).
 - **Tooling & Cloud**: Render Blueprints, Astropods CLI, APIMatic Context Plugin, Postman Collection v2.1.
 
 ---
@@ -86,7 +97,7 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 ## 🚧 Challenges We Ran Into
 
 1. **A2A Swarm Synchronization**: Coordinating 4 distinct microservices without deadlock or latency spikes. We solved this with an async HTTPX connection pool and dual-mode in-process execution fallback.
-2. **Sub-Second Investigation Latency**: Fraud mitigation must happen before order confirmation returns to the user. We optimized Gemini 2.5 Flash prompt payloads with APIMatic pre-computed heuristic vectors, achieving sub-second P90 inference.
+2. **Sub-Second Investigation Latency**: Fraud mitigation must happen before order confirmation returns to the user. We optimized Gemini 2.5 Flash prompt payloads with APIMatic pre-computed heuristic vectors and Channel3 FMV checks, achieving sub-second P90 inference.
 3. **High-Performance Dashboard Rendering**: Preventing browser freeze during rapid velocity attack bursts. We customized AG Grid's virtual DOM row renderer and eliminated costly box-shadow repaints.
 
 ---
@@ -95,7 +106,7 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 
 - **100% Native PayPal Payments v2 Execution**: Successfully executing real `refund_capture` and `void_authorization` calls in the PayPal Developer Sandbox.
 - **Sub-Second Mitigation**: Reducing end-to-end fraud investigation and autonomous mitigation from hours of manual review to under 2 seconds.
-- **Full 5-Sponsor Integration**: Seamlessly uniting PayPal, AG Grid, Render, APIMatic, and Astropods into a cohesive enterprise-grade application.
+- **Full 7-Sponsor Integration**: Seamlessly uniting PayPal, AG Grid, Render, APIMatic, Astropods, Bryntum, and Channel3 into a cohesive enterprise-grade application.
 
 ---
 

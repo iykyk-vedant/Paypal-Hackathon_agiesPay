@@ -120,6 +120,9 @@
         <button id="simFraudBtn" class="btn btn-outline-danger">
           <i class="fa-solid fa-user-ninja"></i> Account Takeover ($4,850.00)
         </button>
+        <button id="simTamperBtn" class="btn btn-outline-danger">
+          <i class="fa-solid fa-tag"></i> Price Tampering ($149 vs $3,499)
+        </button>
         <button id="simVelocityBtn" class="btn btn-outline-purple">
           <i class="fa-solid fa-gauge-high"></i> Bot Burst ($1.28)
         </button>
@@ -251,6 +254,46 @@
               <span class="info-label">Current Status:</span>
               <span id="modalStatus" class="info-val status-pill danger">ACCOUNT_LOCKED_BY_AEGISPAY</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Channel3 Fair Market Value (FMV) Verification Section -->
+        <div id="channel3FmvSection" class="channel3-card hidden">
+          <div class="channel3-header">
+            <div class="channel3-brand-badge">
+              <i class="fa-solid fa-cube"></i> <span id="ch3VerifiedTag">Channel3 Product Intelligence</span>
+            </div>
+            <span id="ch3TamperBadge" class="tamper-alert-pill danger">
+              <i class="fa-solid fa-triangle-exclamation"></i> Price Slashing Detected
+            </span>
+          </div>
+          <div class="channel3-content">
+            <img id="ch3ProductImage" src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&q=80" alt="Verified Product" class="channel3-thumb" />
+            <div class="channel3-details">
+              <h4 id="ch3ProductTitle" class="ch3-title">Apple MacBook Pro 16-inch M3 Max</h4>
+              <div class="ch3-meta">
+                <span>Brand: <strong id="ch3Brand">Apple</strong></span> • 
+                <span>Retailer: <strong id="ch3Retailer">Best Buy</strong></span>
+              </div>
+              <div class="price-comparison-grid">
+                <div class="price-col">
+                  <span class="price-label">Order Cart Price</span>
+                  <span id="ch3CartPrice" class="price-val tampered">$149.00</span>
+                </div>
+                <div class="price-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                <div class="price-col">
+                  <span class="price-label">Channel3 FMV (25k+ Stores)</span>
+                  <span id="ch3MarketPrice" class="price-val market">$3,499.00</span>
+                </div>
+                <div class="price-col variance">
+                  <span class="price-label">Variance</span>
+                  <span id="ch3Variance" class="price-val variance-badge">-95.7%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ch3-footer-note">
+            <i class="fa-solid fa-shield-halved"></i> Cross-referenced against 100M+ products via Channel3 API. DOM price injection detected before PayPal checkout.
           </div>
         </div>
 

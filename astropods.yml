@@ -36,10 +36,20 @@ providers:
         datatype: string
         default: "sandbox"
         description: "PayPal API Mode (sandbox or live)"
+  channel3:
+    scope:
+      - product_intelligence
+    variables:
+      - name: API_KEY
+        datatype: string
+        secret: true
+        description: "Channel3 E-Commerce API Key (100M+ Product Catalog)"
 
 integrations:
   paypal_commerce:
     provider: paypal
+  channel3_catalog:
+    provider: channel3
 
 ingestion:
   paypal_fraud_webhook:

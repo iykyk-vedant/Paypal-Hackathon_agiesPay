@@ -33,6 +33,9 @@ services:
       - key: GEMINI_API_KEY
         sync: false
         description: "Google Gemini 2.5 Flash API Key for investigation reasoning"
+      - key: CHANNEL3_API_KEY
+        sync: false
+        description: "Channel3 E-Commerce API Key for product verification and FMV pricing"
 
   # --------------------------------------------------------------------------
   # Service 2: AegisPay AG Grid Enterprise Real-Time Ops Dashboard

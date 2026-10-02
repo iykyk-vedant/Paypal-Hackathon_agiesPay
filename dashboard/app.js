@@ -433,6 +433,8 @@ function handleIncomingBackendEvent(data) {
     }, 600);
   }
 
+  const channel3Data = data.investigation_result?.channel3_product_data || data.transaction_data?.channel3_product_data || null;
+
   const row = {
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
     timestamp: new Date().toLocaleTimeString(),
@@ -447,6 +449,7 @@ function handleIncomingBackendEvent(data) {
     status: status,
     justification: data.justification || analysis.justification || "AegisPay swarm fraud evaluation completed.",
     factors: data.signals || analysis.signals || ["PayPal Commerce Inspection"],
+    channel3: channel3Data,
     rawJson: data
   };
 
@@ -553,6 +556,15 @@ function setupEventListeners() {
       simulateTransaction("Phantom Buyer 0x99", 3499.00, "Apple MacBook Pro 16", "Compromised Account Takeover", 9.4, "Auto-Refunded (PayPal)");
     });
   });
+
+  const simTamperBtn = document.getElementById("simTamperBtn");
+  if (simTamperBtn) {
+    simTamperBtn.addEventListener("click", () => {
+      triggerBackendScenario("price_tampering", () => {
+        simulatePriceTamperingFallback();
+      });
+    });
+  }
 
   document.getElementById("simVelocityBtn").addEventListener("click", () => {
     triggerBackendScenario("card_testing_bot", () => {
@@ -741,6 +753,74 @@ function simulateVelocityBurst() {
   }, 1200);
 }
 
+function simulatePriceTamperingFallback() {
+  logTerminal(`[Channel3 API] Querying normalized catalog (100M+ products across 25,000+ retailers)...`, "monitor");
+  setTimeout(() => {
+    logTerminal(`[InvestigationAgent] Target item 'Apple MacBook Pro 16' has Fair Market Value of $3,499.00.`, "investigation");
+  }, 400);
+  setTimeout(() => {
+    logTerminal(`[Channel3 FMV] ALERT! Cart price slashed to $149.00 (-95.7% variance)! DOM Price Tampering detected!`, "actuator");
+  }, 800);
+  setTimeout(() => {
+    logTerminal(`[ActuatorAgent] Risk 9.8/10 CRITICAL! Executed PayPal Payments v2 refund_capture to prevent merchant loss.`, "actuator");
+  }, 1200);
+
+  const orderNum = Math.floor(1000 + Math.random() * 9000);
+  const txId = `tx_${Date.now()}`;
+  const newTx = {
+    id: txId,
+    timestamp: new Date().toTimeString().split(" ")[0],
+    orderId: `PP-2026-${orderNum}`,
+    customer: "TamperBot Session_X",
+    email: "exploit_user@darknet-market.org",
+    account: "ACCT-US-918231",
+    amount: 149.00,
+    category: "Apple MacBook Pro 16",
+    location: "Miami, FL, US",
+    riskScore: 9.8,
+    status: "Auto-Refunded (PayPal)",
+    justification: "Channel3 Product Intelligence Alert: Cart Price Tampering detected! Order charged $149.00 for 'Apple MacBook Pro 16-inch M3 Max' (Verified Market Value: $3,499.00, Variance: -95.7%). Immediate PayPal Payments v2 refund_capture executed.",
+    factors: ["CHANNEL3_PRICE_TAMPERING", "Cart Slashing (-95.7%)", "Severe FMV Discrepancy"],
+    channel3: {
+      item_queried: "Apple MacBook Pro 16",
+      verified_title: "Apple MacBook Pro 16-inch M3 Max 36GB RAM 1TB SSD",
+      brand: "Apple",
+      retailer: "Best Buy",
+      market_price: 3499.00,
+      order_price: 149.00,
+      variance_pct: -95.7,
+      is_tampered: true,
+      anomaly_type: "CART_PRICE_SLASHING_DETECTED",
+      image_url: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&q=80",
+      channel3_verified: true
+    },
+    rawJson: {
+      event_type: "PAYMENT.CAPTURE.REFUNDED",
+      order_id: `PP-2026-${orderNum}`,
+      amount: "149.00 USD",
+      channel3_product_data: {
+        verified_title: "Apple MacBook Pro 16-inch M3 Max",
+        market_price: 3499.00,
+        cart_price: 149.00,
+        variance: "-95.7%"
+      }
+    }
+  };
+
+  kpiState.totalVolume += 149.00;
+  kpiState.totalTransactions += 1;
+  kpiState.fraudIntercepted += 3499.00;
+  kpiState.attacksCount += 1;
+  updateKpiDisplay();
+
+  if (gridApi) {
+    gridApi.applyTransaction({ add: [newTx], addIndex: 0 });
+  }
+  if (typeof window.addDisputeToBryntumScheduler === 'function') {
+    window.addDisputeToBryntumScheduler(orderNum, 149.00, 9.8, "Auto-Refunded (PayPal)", "Channel3 Price Slashing (-95.7%)");
+  }
+}
+
 /* --------------------------------------------------------------------------
    UI Helpers & Case File Modal
    -------------------------------------------------------------------------- */
@@ -807,6 +887,37 @@ function openCaseFile(tx) {
     scoreCategoryEl.className = "score-category-tag safe";
     dial.style.borderColor = "#10B981";
     dial.style.background = "rgba(16, 185, 129, 0.2)";
+  }
+
+  // Channel3 Product Intelligence Section
+  const ch3Section = document.getElementById("channel3FmvSection");
+  const ch3Data = tx.channel3 || tx.rawJson?.investigation_result?.channel3_product_data || tx.rawJson?.channel3_product_data;
+  if (ch3Section) {
+    if (ch3Data && (ch3Data.is_tampered || ch3Data.channel3_verified || ch3Data.market_price)) {
+      ch3Section.classList.remove("hidden");
+      document.getElementById("ch3ProductTitle").innerText = ch3Data.verified_title || ch3Data.item_queried || "Verified Product";
+      document.getElementById("ch3Brand").innerText = ch3Data.brand || "Verified Manufacturer";
+      document.getElementById("ch3Retailer").innerText = ch3Data.retailer || "Retail Network (25k+ stores)";
+      document.getElementById("ch3CartPrice").innerText = `$${parseFloat(ch3Data.order_price || tx.amount).toFixed(2)}`;
+      document.getElementById("ch3MarketPrice").innerText = `$${parseFloat(ch3Data.market_price || 0).toFixed(2)}`;
+      document.getElementById("ch3Variance").innerText = `${ch3Data.variance_pct || 0}%`;
+      const imgEl = document.getElementById("ch3ProductImage");
+      if (imgEl && ch3Data.image_url) {
+        imgEl.src = ch3Data.image_url;
+      }
+      const badgeEl = document.getElementById("ch3TamperBadge");
+      if (badgeEl) {
+        if (ch3Data.is_tampered) {
+          badgeEl.className = "tamper-alert-pill danger";
+          badgeEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Price Slashing Detected';
+        } else {
+          badgeEl.className = "tamper-alert-pill safe";
+          badgeEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> Fair Market Value Verified';
+        }
+      }
+    } else {
+      ch3Section.classList.add("hidden");
+    }
   }
 
   // Factor pills

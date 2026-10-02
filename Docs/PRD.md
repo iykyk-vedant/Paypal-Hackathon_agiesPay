@@ -226,7 +226,17 @@ To qualify for the **$5,000 AG Grid Sponsor Prize**, AegisPay includes a state-o
 2. **Cell Styling & Badges**: Dynamic conditional formatting on `Risk Score` (Green $\le 4$, Amber $4.1–6.9$, Red $\ge 7$).
 3. **Master-Detail View**: Clicking an order expands an inner panel rendering Gemini's markdown investigation breakdown and historical spending charts.
 4. **Action Renderers**: Interactive buttons embedded directly in grid rows (`"Refund via PayPal"`, `"Release Hold"`).
-5. **Quick Filtering & CSV Export**: Instant filtering by risk tier, date range, or amount.
+### 6.2 Bryntum Scheduler (Dispute Triage & Deadline Horizon)
+To qualify for the **Best Use of Bryntum Prize**, AegisPay includes an interactive Bryntum Scheduler view:
+- **Dispute Horizon**: Maps upcoming 10-day PayPal buyer claim windows and evidence submission deadlines.
+- **Resource Allocations**: Visualizes swarm workloads across Gemini 2.5 Flash agents, PayPal Actuator engines, and human dispute specialists.
+- **Live Scheduling**: Dynamic timeline updates as disputes are triggered or mitigated.
+
+### 6.3 Channel3 (Fair Market Value & Cart Price Tampering Shield)
+To qualify for the **Best Use of Channel3 ($2,500) Prize**, AegisPay integrates Channel3's clean, normalized product catalog (100M+ products across 25,000+ retailers):
+- **Cart Price Slashing**: Flags client-side DOM manipulations (e.g. $3,499 MacBook Pro slashed to $149 in hacked carts).
+- **FMV Verification**: Replaces manual catalog maintenance with live normalized market prices.
+- **Case File Visualizer**: Renders verified product image thumbnails, brand, retailer, and variance pills inside the merchant drawer.
 
 ---
 
@@ -234,13 +244,14 @@ To qualify for the **$5,000 AG Grid Sponsor Prize**, AegisPay includes a state-o
 
 | Tier | Technologies |
 | :--- | :--- |
-| **Language & Runtime** | Python 3.11+, asyncio, Go 1.23 |
+| **Language & Runtime** | Python 3.10+, asyncio, Uvicorn, FastAPI |
 | **AI Models & Frameworks** | Google ADK, Google GenAI SDK, Gemini 2.5 Flash |
 | **Agent Protocols** | Google Agent-to-Agent (A2A) SDK, JSON-RPC 2.0 |
 | **APIs & Payment Platform**| PayPal Developer Sandbox (Orders v2, Payments v2, Disputes v1) |
-| **Frontend UI** | HTML5, Vanilla CSS (Modern Dark Mode / Glassmorphism), AG Grid |
-| **Cloud Hosting & Deploy** | Render (Web Service + Background Workers), Docker |
-| **API Tooling** | APIMatic Context Plugin, Postman Collections |
+| **Product Intelligence API**| Channel3 E-Commerce API (100M+ Products Catalog, 25k+ Retailers) |
+| **Frontend Surveillance** | AG Grid Enterprise v32+ (Quartz Dark), Bryntum Scheduler (Stockholm Dark), Vanilla CSS |
+| **Cloud Hosting & Deploy** | Render Blueprint IaC (`render.yaml`), Astropods (`astropods.yml`), Docker |
+| **API Tooling** | APIMatic Context Plugin, Postman Collection v2.1 |
 
 ---
 
