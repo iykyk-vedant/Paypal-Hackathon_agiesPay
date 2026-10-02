@@ -463,6 +463,11 @@ function handleIncomingBackendEvent(data) {
   if (gridApi) {
     gridApi.applyTransaction({ add: [row], addIndex: 0 });
   }
+
+  // Stream into Bryntum Scheduler Timeline
+  if (typeof window.addDisputeToBryntumScheduler === 'function') {
+    window.addDisputeToBryntumScheduler(orderId, amount, riskScore, status, data.justification || "");
+  }
 }
 
 async function triggerBackendScenario(scenarioName, fallbackFn) {
@@ -482,6 +487,36 @@ async function triggerBackendScenario(scenarioName, fallbackFn) {
    Event Listeners & Controls
    -------------------------------------------------------------------------- */
 function setupEventListeners() {
+  // View Switcher Tabs (AG Grid vs. Bryntum Scheduler)
+  const gridTabBtn = document.getElementById("viewGridTabBtn");
+  const schedTabBtn = document.getElementById("viewSchedulerTabBtn");
+  const gridSection = document.getElementById("gridTableSection");
+  const schedSection = document.getElementById("bryntumSchedulerSection");
+
+  if (gridTabBtn && schedTabBtn) {
+    gridTabBtn.addEventListener("click", () => {
+      gridTabBtn.classList.add("active");
+      schedTabBtn.classList.remove("active");
+      gridSection.classList.remove("hidden");
+      schedSection.classList.add("hidden");
+      if (gridApi) gridApi.sizeColumnsToFit();
+      logTerminal("Switched to AG Grid Real-Time Surveillance view.", "system");
+    });
+
+    schedTabBtn.addEventListener("click", () => {
+      schedTabBtn.classList.add("active");
+      gridTabBtn.classList.remove("active");
+      schedSection.classList.remove("hidden");
+      gridSection.classList.add("hidden");
+      if (window.bryntumScheduler && window.bryntumScheduler.refresh) {
+        setTimeout(() => {
+          window.bryntumScheduler.refresh();
+        }, 80);
+      }
+      logTerminal("Switched to Bryntum Dispute Triage & Deadline Horizon view.", "system");
+    });
+  }
+
   // Quick Filter Input
   const quickFilter = document.getElementById("quickFilterInput");
   quickFilter.addEventListener("input", (e) => {
@@ -686,6 +721,11 @@ function simulateTransaction(customerName, amount, category, description, riskSc
     // Insert into AG Grid at top (index 0) with live row animation!
     if (gridApi) {
       gridApi.applyTransaction({ add: [newTx], addIndex: 0 });
+    }
+
+    // Stream into Bryntum Scheduler Timeline
+    if (typeof window.addDisputeToBryntumScheduler === 'function') {
+      window.addDisputeToBryntumScheduler(orderNum, amount, riskScore, status, description);
     }
   }, 1300);
 }

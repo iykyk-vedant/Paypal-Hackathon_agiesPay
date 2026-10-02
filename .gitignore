@@ -72,3 +72,6 @@ htmlcov/
 
 # Application Secrets
 aegispay-system/gemini-api-key-secret.yaml
+
+# Node & Package Managers
+node_modules/

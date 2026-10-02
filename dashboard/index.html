@@ -17,6 +17,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.2.0/styles/ag-grid.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.2.0/styles/ag-theme-quartz.css">
   
+  <!-- Bryntum Scheduler CSS (Structural + Stockholm Dark Theme) -->
+  <link rel="stylesheet" href="bryntum/scheduler.css">
+  <link rel="stylesheet" href="bryntum/stockholm-dark.css">
+  
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -36,8 +40,9 @@
       </div>
       <div class="hackathon-badges">
         <span class="badge paypal-badge"><i class="fa-brands fa-paypal"></i> PayPal Sandbox</span>
-        <span class="badge aggrid-badge"><i class="fa-solid fa-table-cells"></i> AG Grid Enterprise UI</span>
+        <span class="badge aggrid-badge"><i class="fa-solid fa-table-cells"></i> AG Grid Enterprise</span>
         <span class="badge gemini-badge"><i class="fa-solid fa-brain"></i> Gemini 2.5 Flash</span>
+        <span class="badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #FBBF24;"><i class="fa-solid fa-calendar-days"></i> Bryntum Scheduler</span>
       </div>
     </div>
 
@@ -137,8 +142,18 @@
       </div>
     </section>
 
+    <!-- View Switcher Tabs (AG Grid Surveillance vs. Bryntum Dispute Horizon) -->
+    <div class="view-switcher-bar">
+      <button id="viewGridTabBtn" class="view-tab-btn active">
+        <i class="fa-solid fa-table-list"></i> AG Grid Real-Time Surveillance
+      </button>
+      <button id="viewSchedulerTabBtn" class="view-tab-btn">
+        <i class="fa-solid fa-calendar-days"></i> Bryntum Dispute Triage & Deadline Horizon
+      </button>
+    </div>
+
     <!-- AG Grid Table Section -->
-    <section class="grid-section">
+    <section id="gridTableSection" class="grid-section">
       <div class="grid-card-header">
         <div class="grid-header-title">
           <h3><i class="fa-solid fa-table-list"></i> Real-Time PayPal Transaction Surveillance</h3>
@@ -153,6 +168,24 @@
 
       <!-- AG Grid Mounting Node -->
       <div id="transactionsGrid" class="ag-theme-quartz-dark custom-ag-grid"></div>
+    </section>
+
+    <!-- Bryntum Scheduler Section -->
+    <section id="bryntumSchedulerSection" class="grid-section hidden">
+      <div class="grid-card-header">
+        <div class="grid-header-title">
+          <h3><i class="fa-solid fa-calendar-days"></i> Bryntum Dispute Triage & 10-Day Response Horizon</h3>
+          <span class="grid-subtitle">Powered by Bryntum Scheduler Stockholm Dark • AI Swarm & Analyst Deadline Allocation</span>
+        </div>
+        <div class="grid-badge-legend">
+          <span class="legend-item"><span class="badge badge-safe">AI Telemetry</span></span>
+          <span class="legend-item"><span class="badge badge-review">10-Day Window Review</span></span>
+          <span class="legend-item"><span class="badge badge-fraud">PayPal Payments v2 Actuation</span></span>
+        </div>
+      </div>
+
+      <!-- Bryntum Scheduler Mounting Node -->
+      <div id="bryntumSchedulerContainer" class="bryntum-scheduler-wrapper"></div>
     </section>
 
     <!-- Bottom Split: Live Agent A2A Pipeline Stream -->
@@ -314,6 +347,9 @@
   <!-- AG Grid Enterprise JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/ag-grid-enterprise@32.2.0/dist/ag-grid-enterprise.min.js"></script>
   
+  <!-- Bryntum Scheduler Component (ES Module) -->
+  <script type="module" src="bryntum-scheduler.js"></script>
+
   <!-- AegisPay Dashboard JS -->
   <script src="app.js"></script>
 </body>

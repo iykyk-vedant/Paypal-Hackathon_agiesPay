@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@bryntum/scheduler": "npm:@bryntum/scheduler-trial@^7.3.7"
+  }
+}

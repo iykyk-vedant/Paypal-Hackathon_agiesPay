@@ -901,3 +901,49 @@ h1, h2, h3, h4 {
   color: #fff;
   border-color: var(--paypal-blue);
 }
+
+/* View Switcher Tabs (AG Grid vs. Bryntum Scheduler) */
+.view-switcher-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  margin-bottom: -4px;
+}
+
+.view-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-tab-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.view-tab-btn.active {
+  background: rgba(0, 112, 224, 0.15);
+  color: #38BDF8;
+  border-color: #0070BA;
+  box-shadow: 0 0 12px rgba(0, 112, 224, 0.2);
+}
+
+.bryntum-scheduler-wrapper {
+  height: 480px;
+  width: 100%;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  overflow: hidden;
+  background: #11151c;
+}
+
