@@ -289,11 +289,14 @@ gantt
 ## 10. Submission Checklist (Devpost Requirements)
 
 - [x] **Public GitHub Repository**: [iykyk-vedant/Paypal-Hackathon_agiesPay](https://github.com/iykyk-vedant/Paypal-Hackathon_agiesPay)
-- [x] **Open Source License**: MIT License visible at root
-- [x] **Clean Commit History**: 30 distinct commits dated strictly on or after October 1, 2026
+- [x] **Open Source License**: MIT License visible at root ([LICENSE](../LICENSE))
+- [x] **Clean Commit History**: Distinct commits dated strictly on or after October 1, 2026
 - [x] **Detailed PRD & Docs**: [Docs/PRD.md](file:///d:/PayPal%20hackathon/Docs/PRD.md)
-- [ ] **PayPal Sandbox Integration**: Live checkout & refund API calls
-- [ ] **Functional Demo URL**: Hosted on Render
-- [ ] **Postman Collection**: Public workspace link
-- [ ] **Demo Video**: High-definition video under 3 minutes uploaded to YouTube
-- [ ] **Devpost Text Description**: Highlighting PayPal + Gemini + AG Grid + APIMatic
+- [x] **PayPal Sandbox Integration**: Live Orders v2 & Payments v2 API calls with official credentials
+- [x] **Render Cloud Blueprint**: Production IaC specification ([render.yaml](../render.yaml), [Docs/RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md))
+- [x] **Postman Collection**: Comprehensive collection ([aegispay_postman_collection.json](../aegispay_postman_collection.json))
+- [x] **AG Grid Merchant Dashboard**: Real-time SSE streaming, Quartz Dark theme, Case File drawer, CSV export
+- [x] **APIMatic Context Plugin**: OpenAPI context injection ([.apimatic/paypal_context_plugin.json](../.apimatic/paypal_context_plugin.json))
+- [x] **Astropods Agent Blueprint**: Specification & agent card ([astropods.yml](../astropods.yml), [AGENT.md](../AGENT.md))
+- [x] **Devpost Submission Guide**: Ready-to-paste submission guide ([Docs/DEVPOST_SUBMISSION.md](DEVPOST_SUBMISSION.md))
+- [ ] **Demo Video**: 2-3 minute video walkthrough uploaded to YouTube / Loom (script in [Docs/DEMO_SCRIPT.md](DEMO_SCRIPT.md))

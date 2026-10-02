@@ -1,0 +1,351 @@
+{
+  "info": {
+    "_postman_id": "aegispay-paypal-fraud-shield-2026",
+    "name": "AegisPay — Autonomous Multi-Agent AI Fraud Shield for PayPal",
+    "description": "Comprehensive Postman collection for AegisPay Multi-Agent Swarm and official PayPal Developer Sandbox APIs (Orders v2, Payments v2, Webhooks, and SSE Streaming). Submitted for 'Build What's Next with PayPal and AI' Hackathon.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "PAYPAL_BASE_URL",
+      "value": "https://api-m.sandbox.paypal.com",
+      "type": "string"
+    },
+    {
+      "key": "AEGISPAY_ORCHESTRATOR_URL",
+      "value": "http://localhost:8085",
+      "type": "string"
+    },
+    {
+      "key": "AEGISPAY_INVESTIGATION_URL",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "AEGISPAY_ACTUATOR_URL",
+      "value": "http://localhost:8082",
+      "type": "string"
+    },
+    {
+      "key": "AEGISPAY_MONITOR_URL",
+      "value": "http://localhost:8083",
+      "type": "string"
+    },
+    {
+      "key": "PAYPAL_CLIENT_ID",
+      "value": "{{PAYPAL_CLIENT_ID}}",
+      "type": "string"
+    },
+    {
+      "key": "PAYPAL_CLIENT_SECRET",
+      "value": "{{PAYPAL_CLIENT_SECRET}}",
+      "type": "string"
+    },
+    {
+      "key": "PAYPAL_ACCESS_TOKEN",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. PayPal Sandbox REST APIs",
+      "item": [
+        {
+          "name": "OAuth2 — Generate Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "en_US"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{PAYPAL_CLIENT_ID}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{PAYPAL_CLIENT_SECRET}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{PAYPAL_BASE_URL}}/v1/oauth2/token",
+              "host": ["{{PAYPAL_BASE_URL}}"],
+              "path": ["v1", "oauth2", "token"]
+            },
+            "description": "Requests an OAuth 2.0 access token using your PayPal Sandbox Client ID and Secret."
+          }
+        },
+        {
+          "name": "Orders v2 — Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PAYPAL_ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"intent\": \"CAPTURE\",\n  \"purchase_units\": [\n    {\n      \"reference_id\": \"AEGIS-ORDER-2026\",\n      \"amount\": {\n        \"currency_code\": \"USD\",\n        \"value\": \"250.00\"\n      },\n      \"description\": \"AegisPay Protected Merchant Checkout\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{PAYPAL_BASE_URL}}/v2/checkout/orders",
+              "host": ["{{PAYPAL_BASE_URL}}"],
+              "path": ["v2", "checkout", "orders"]
+            },
+            "description": "Creates a new PayPal order to inspect items, buyer details, and risk flags."
+          }
+        },
+        {
+          "name": "Payments v2 — Refund Captured Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PAYPAL_ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": {\n    \"value\": \"250.00\",\n    \"currency_code\": \"USD\"\n  },\n  \"note_to_payer\": \"AegisPay Autonomous Defense: High risk transaction mitigated proactively before chargeback.\"\n}"
+            },
+            "url": {
+              "raw": "{{PAYPAL_BASE_URL}}/v2/payments/captures/:capture_id/refund",
+              "host": ["{{PAYPAL_BASE_URL}}"],
+              "path": ["v2", "payments", "captures", ":capture_id", "refund"],
+              "variable": [
+                {
+                  "key": "capture_id",
+                  "value": "2GG123456789",
+                  "description": "PayPal Capture ID"
+                }
+              ]
+            },
+            "description": "Refunds a captured payment on PayPal Payments v2 API upon fraud detection."
+          }
+        },
+        {
+          "name": "Payments v2 — Void Authorized Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{PAYPAL_ACCESS_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{PAYPAL_BASE_URL}}/v2/payments/authorizations/:authorization_id/void",
+              "host": ["{{PAYPAL_BASE_URL}}"],
+              "path": ["v2", "payments", "authorizations", ":authorization_id", "void"],
+              "variable": [
+                {
+                  "key": "authorization_id",
+                  "value": "0AH123456789",
+                  "description": "PayPal Authorization ID"
+                }
+              ]
+            },
+            "description": "Voids an authorized payment on PayPal Payments v2 API to block card testing attacks."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. AegisPay Orchestrator Swarm (Port 8085)",
+      "item": [
+        {
+          "name": "Orchestrator — Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/health",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["health"]
+            },
+            "description": "Probes Orchestrator service health and PayPal Developer mode."
+          }
+        },
+        {
+          "name": "Simulate Scenario — Account Takeover",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/simulate-scenario/account_takeover",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["simulate-scenario", "account_takeover"]
+            },
+            "description": "Simulates an offshore Tor VPN account takeover attack ($3,499 USD) and routes through the 4-agent swarm."
+          }
+        },
+        {
+          "name": "Simulate Scenario — Card Testing Bot Burst",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/simulate-scenario/card_testing_bot",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["simulate-scenario", "card_testing_bot"]
+            },
+            "description": "Simulates rapid microtransaction bot bursts ($1.28 USD) and executes autonomous void authorization."
+          }
+        },
+        {
+          "name": "Simulate Scenario — Friendly Fraud Chargeback",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/simulate-scenario/friendly_fraud",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["simulate-scenario", "friendly_fraud"]
+            },
+            "description": "Simulates repeat disputer attempting chargeback exploits ($899 USD)."
+          }
+        },
+        {
+          "name": "Simulate Scenario — Legitimate Safe Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/simulate-scenario/legitimate_order",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["simulate-scenario", "legitimate_order"]
+            },
+            "description": "Simulates a normal verified customer purchase ($45 USD) clearing with low risk and zero friction."
+          }
+        },
+        {
+          "name": "Live Real-Time Stream (SSE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "url": {
+              "raw": "{{AEGISPAY_ORCHESTRATOR_URL}}/events/stream",
+              "host": ["{{AEGISPAY_ORCHESTRATOR_URL}}"],
+              "path": ["events", "stream"]
+            },
+            "description": "Server-Sent Events endpoint streaming real-time A2A fraud alerts directly into AG Grid."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Specialized Swarm Agents",
+      "item": [
+        {
+          "name": "Investigation Agent — Investigate Transaction (Port 8081)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"5O_TEST_101\",\n  \"amount\": 3499.00,\n  \"payer\": {\n    \"email_address\": \"compromised_user@example.com\",\n    \"payer_id\": \"PAYER-US-891024\",\n    \"name\": { \"given_name\": \"Alexander\", \"surname\": \"Wright\" }\n  },\n  \"purchase_units\": [\n    {\n      \"shipping\": { \"address\": { \"country_code\": \"RO\" } }\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{AEGISPAY_INVESTIGATION_URL}}/investigate",
+              "host": ["{{AEGISPAY_INVESTIGATION_URL}}"],
+              "path": ["investigate"]
+            },
+            "description": "Directly invokes Gemini 2.5 Flash and APIMatic risk reasoning engine."
+          }
+        },
+        {
+          "name": "Actuator Agent — Execute Mitigation (Port 8082)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"refund_capture\",\n  \"capture_id\": \"2GG981240192\",\n  \"amount\": 3499.00,\n  \"reason\": \"Postman Verification: Proactive fraud reversal\"\n}"
+            },
+            "url": {
+              "raw": "{{AEGISPAY_ACTUATOR_URL}}/execute",
+              "host": ["{{AEGISPAY_ACTUATOR_URL}}"],
+              "path": ["execute"]
+            },
+            "description": "Directly executes deterministic mitigation via PayPal Payments v2 API."
+          }
+        },
+        {
+          "name": "Transaction Monitor — Webhook Receiver (Port 8083)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_type\": \"CHECKOUT.ORDER.APPROVED\",\n  \"id\": \"WH-2026-TEST-99\",\n  \"resource\": {\n    \"id\": \"5O881290312\",\n    \"status\": \"APPROVED\",\n    \"purchase_units\": [\n      {\n        \"amount\": { \"value\": \"1499.00\", \"currency_code\": \"USD\" }\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{AEGISPAY_MONITOR_URL}}/webhooks/paypal",
+              "host": ["{{AEGISPAY_MONITOR_URL}}"],
+              "path": ["webhooks", "paypal"]
+            },
+            "description": "Ingests incoming PayPal webhook payloads and dispatches A2A alerts."
+          }
+        }
+      ]
+    }
+  ]
+}
