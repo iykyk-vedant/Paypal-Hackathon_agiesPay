@@ -12,15 +12,10 @@ if (typeof agGrid !== 'undefined' && agGrid.LicenseManager) {
 // Global AG Grid API reference
 let gridApi;
 
-// Simulated KPI state
-let kpiState = {
-  totalVolume: 142890.0,
-  totalTransactions: 1482,
-  fraudIntercepted: 19650.0,
-  attacksCount: 15
-};
+// Currently open case file transaction (for Dispute Evidence Package generation)
+let currentOpenTx = null;
 
-// Initial Realistic PayPal Transaction Data
+// Initial Realistic PayPal Transaction Data (Orders v2 schema-grounded)
 const INITIAL_TRANSACTIONS = [
   {
     id: "tx_01",
@@ -36,15 +31,29 @@ const INITIAL_TRANSACTIONS = [
     status: "Auto-Refunded (PayPal)",
     justification: "Account registered in San Jose, CA with average spend of $42. Order placed from offshore commercial VPN requesting high-denomination digital vouchers without physical delivery address.",
     factors: ["Cross-border IP Proxy", "Velocity Spike (+480%)", "High-Risk Digital Goods"],
+    captureId: "2GG91240CAP9812S",
+    ipCountry: "RO",
+    isoTimestamp: "2026-10-01T12:48:10Z",
     rawJson: {
-      event_type: "CHECKOUT.ORDER.APPROVED",
-      order_id: "PP-2026-9812",
-      amount: "4850.00 USD",
-      agent_decision: {
-        score: 9.1,
-        verdict: "ESCALATE_AND_REFUND",
-        actuator_call: "POST /v2/payments/captures/CAP-9812/refund"
-      }
+      id: "5O190127TN3647120",
+      intent: "CAPTURE",
+      status: "COMPLETED",
+      create_time: "2026-10-01T12:48:10Z",
+      payer: {
+        payer_id: "ACCT-US-891240",
+        email_address: "a.wright@securemail.com",
+        name: { given_name: "Alexander", surname: "Wright" }
+      },
+      purchase_units: [
+        {
+          reference_id: "PU-9812-01",
+          amount: { currency_code: "USD", value: "4850.00" },
+          items: [{ name: "Digital Gift Cards", quantity: "1", unit_amount: { currency_code: "USD", value: "4850.00" }, category: "DIGITAL_GOODS" }],
+          shipping: { address: { admin_area_2: "Bucharest", country_code: "RO" } }
+        }
+      ],
+      links: [{ href: "https://api-m.sandbox.paypal.com/v2/checkout/orders/5O190127TN3647120", rel: "self", method: "GET" }],
+      aegispay_decision: { risk_score: 9.1, verdict: "ESCALATE_AND_REFUND", capture_id: "2GG91240CAP9812S", actuator_call: "POST /v2/payments/captures/2GG91240CAP9812S/refund" }
     }
   },
   {
@@ -61,14 +70,29 @@ const INITIAL_TRANSACTIONS = [
     status: "Under Review",
     justification: "Customer has consistent 3-year history with PayPal. First time shipping to alternate commercial address in Texas. Hold placed on capture pending one-time SMS verification.",
     factors: ["Address Mismatch", "Verified Buyer Profile"],
+    captureId: "N/A (Authorization Hold)",
+    ipCountry: "US",
+    isoTimestamp: "2026-10-01T12:45:22Z",
     rawJson: {
-      event_type: "CHECKOUT.ORDER.APPROVED",
-      order_id: "PP-2026-9811",
-      amount: "1499.00 USD",
-      agent_decision: {
-        score: 5.4,
-        verdict: "HOLD_FOR_REVIEW"
-      }
+      id: "5O190127TN3647119",
+      intent: "AUTHORIZE",
+      status: "PENDING",
+      create_time: "2026-10-01T12:45:22Z",
+      payer: {
+        payer_id: "ACCT-US-310452",
+        email_address: "elena.r@fintech.io",
+        name: { given_name: "Elena", surname: "Rostova" }
+      },
+      purchase_units: [
+        {
+          reference_id: "PU-9811-01",
+          amount: { currency_code: "USD", value: "1499.00" },
+          items: [{ name: "Electronics & Laptops", quantity: "1", unit_amount: { currency_code: "USD", value: "1499.00" }, category: "PHYSICAL_GOODS" }],
+          shipping: { address: { admin_area_2: "Austin, TX", country_code: "US" } }
+        }
+      ],
+      links: [{ href: "https://api-m.sandbox.paypal.com/v2/checkout/orders/5O190127TN3647119", rel: "self", method: "GET" }],
+      aegispay_decision: { risk_score: 5.4, verdict: "HOLD_FOR_REVIEW" }
     }
   },
   {
@@ -85,14 +109,29 @@ const INITIAL_TRANSACTIONS = [
     status: "Approved",
     justification: "Recurring merchant payment profile. Matches existing home geolocation and verified payment method. Zero risk indicators.",
     factors: ["Verified Device", "Normal Spend Pattern"],
+    captureId: "2GG02948CAP9810S",
+    ipCountry: "US",
+    isoTimestamp: "2026-10-01T12:43:05Z",
     rawJson: {
-      event_type: "PAYMENT.CAPTURE.COMPLETED",
-      order_id: "PP-2026-9810",
-      amount: "42.50 USD",
-      agent_decision: {
-        score: 1.1,
-        verdict: "AUTO_APPROVE"
-      }
+      id: "5O190127TN3647118",
+      intent: "CAPTURE",
+      status: "COMPLETED",
+      create_time: "2026-10-01T12:43:05Z",
+      payer: {
+        payer_id: "ACCT-US-102948",
+        email_address: "marcus.vance@workmail.org",
+        name: { given_name: "Marcus", surname: "Vance" }
+      },
+      purchase_units: [
+        {
+          reference_id: "PU-9810-01",
+          amount: { currency_code: "USD", value: "42.50" },
+          items: [{ name: "Coffee & Subscription", quantity: "1", unit_amount: { currency_code: "USD", value: "42.50" }, category: "PHYSICAL_GOODS" }],
+          shipping: { address: { admin_area_2: "Seattle, WA", country_code: "US" } }
+        }
+      ],
+      links: [{ href: "https://api-m.sandbox.paypal.com/v2/checkout/orders/5O190127TN3647118", rel: "self", method: "GET" }],
+      aegispay_decision: { risk_score: 1.1, verdict: "AUTO_APPROVE" }
     }
   },
   {
@@ -109,14 +148,29 @@ const INITIAL_TRANSACTIONS = [
     status: "Approved",
     justification: "Routine residential delivery with standard checkout latency (34 seconds). Account in good standing.",
     factors: ["Verified Address"],
+    captureId: "2GG78219CAP9809S",
+    ipCountry: "US",
+    isoTimestamp: "2026-10-01T12:38:50Z",
     rawJson: {
-      event_type: "PAYMENT.CAPTURE.COMPLETED",
-      order_id: "PP-2026-9809",
-      amount: "185.00 USD",
-      agent_decision: {
-        score: 1.8,
-        verdict: "AUTO_APPROVE"
-      }
+      id: "5O190127TN3647117",
+      intent: "CAPTURE",
+      status: "COMPLETED",
+      create_time: "2026-10-01T12:38:50Z",
+      payer: {
+        payer_id: "ACCT-US-778219",
+        email_address: "sarah.j@designco.com",
+        name: { given_name: "Sarah", surname: "Jenkins" }
+      },
+      purchase_units: [
+        {
+          reference_id: "PU-9809-01",
+          amount: { currency_code: "USD", value: "185.00" },
+          items: [{ name: "Home & Kitchen", quantity: "1", unit_amount: { currency_code: "USD", value: "185.00" }, category: "PHYSICAL_GOODS" }],
+          shipping: { address: { admin_area_2: "Denver, CO", country_code: "US" } }
+        }
+      ],
+      links: [{ href: "https://api-m.sandbox.paypal.com/v2/checkout/orders/5O190127TN3647117", rel: "self", method: "GET" }],
+      aegispay_decision: { risk_score: 1.8, verdict: "AUTO_APPROVE" }
     }
   },
   {
@@ -133,15 +187,29 @@ const INITIAL_TRANSACTIONS = [
     status: "Account Locked",
     justification: "Headless browser automation signature detected. Rapid form fill (140ms), non-standard user-agent, rapid attempt to cycle stolen PayPal vaulted credit cards.",
     factors: ["Bot Signature", "Vault Cycling Anomaly", "TOR Exit Node"],
+    captureId: "AUTH-99120WITHHELD",
+    ipCountry: "NL",
+    isoTimestamp: "2026-10-01T12:31:14Z",
     rawJson: {
-      event_type: "CHECKOUT.ORDER.APPROVED",
-      order_id: "PP-2026-9808",
-      amount: "3200.00 USD",
-      agent_decision: {
-        score: 9.6,
-        verdict: "LOCK_AND_TERMINATE",
-        actuator_call: "POST /v2/customer/disputes/prevent"
-      }
+      id: "5O190127TN3647116",
+      intent: "AUTHORIZE",
+      status: "VOIDED",
+      create_time: "2026-10-01T12:31:14Z",
+      payer: {
+        payer_id: "ACCT-US-991204",
+        email_address: "bot-executor@proxy-mesh.net",
+        name: { given_name: "CyberBot", surname: "Agent_99" }
+      },
+      purchase_units: [
+        {
+          reference_id: "PU-9808-01",
+          amount: { currency_code: "USD", value: "3200.00" },
+          items: [{ name: "Hardware Server Parts", quantity: "1", unit_amount: { currency_code: "USD", value: "3200.00" }, category: "PHYSICAL_GOODS" }],
+          shipping: { address: { admin_area_2: "Amsterdam", country_code: "NL" } }
+        }
+      ],
+      links: [{ href: "https://api-m.sandbox.paypal.com/v2/checkout/orders/5O190127TN3647116", rel: "self", method: "GET" }],
+      aegispay_decision: { risk_score: 9.6, verdict: "LOCK_AND_TERMINATE", actuator_call: "POST /v2/customer/disputes/prevent" }
     }
   },
   {
@@ -158,20 +226,49 @@ const INITIAL_TRANSACTIONS = [
     status: "Approved",
     justification: "Legitimate cross-border European payment via PayPal 3D-Secure 2.0. Bank authorization validated.",
     factors: ["3DS Verified", "Consistent Geolocation"],
+    captureId: "2GG51029CAP9807S",
+    ipCountry: "IE",
+    isoTimestamp: "2026-10-01T12:25:40Z",
     rawJson: {
-      event_type: "PAYMENT.CAPTURE.COMPLETED",
-      order_id: "PP-2026-9807",
-      amount: "890.00 USD",
-      agent_decision: {
-        score: 2.3,
-        verdict: "AUTO_APPROVE"
-      }
+      id: "5O190127TN3647115",
+      intent: "CAPTURE",
+      status: "COMPLETED",
+      create_time: "2026-10-01T12:25:40Z",
+      payer: {
+        payer_id: "ACCT-EU-551029",
+        email_address: "liam.oc@dublin.ie",
+        name: { given_name: "Liam", surname: "O'Connor" }
+      },
+      purchase_units: [
+        {
+          reference_id: "PU-9807-01",
+          amount: { currency_code: "USD", value: "890.00" },
+          items: [{ name: "Travel & Hospitality", quantity: "1", unit_amount: { currency_code: "USD", value: "890.00" }, category: "PHYSICAL_GOODS" }],
+          shipping: { address: { admin_area_2: "Dublin", country_code: "IE" } }
+        }
+      ],
+      links: [{ href: "https://api-m.sandbox.paypal.com/v2/checkout/orders/5O190127TN3647115", rel: "self", method: "GET" }],
+      aegispay_decision: { risk_score: 2.3, verdict: "AUTO_APPROVE" }
     }
   }
 ];
 
 // In-memory data store for the grid
 let rowDataStore = [...INITIAL_TRANSACTIONS];
+
+// KPI state computed dynamically from the active transaction session (zero hardcoded vanity numbers)
+function computeInitialKpiState() {
+  const totalVolume = INITIAL_TRANSACTIONS.reduce((sum, tx) => sum + tx.amount, 0);
+  const fraudTx = INITIAL_TRANSACTIONS.filter((tx) => tx.riskScore >= 7.0);
+  return {
+    totalVolume,
+    totalTransactions: INITIAL_TRANSACTIONS.length,
+    fraudIntercepted: fraudTx.reduce((sum, tx) => sum + tx.amount, 0),
+    attacksCount: fraudTx.length,
+    latencySamples: []
+  };
+}
+let kpiState = computeInitialKpiState();
 
 /* --------------------------------------------------------------------------
    AG Grid Column Definitions & Custom Cell Renderers
@@ -198,6 +295,7 @@ const columnDefs = [
     headerName: "Customer",
     field: "customer",
     width: 200,
+    getQuickFilterText: (params) => `${params.data.customer} ${params.data.email || ""} ${params.data.account || ""}`,
     cellRenderer: (params) => {
       const email = params.data.email || "paypal-customer@sandbox.com";
       return `
@@ -231,6 +329,7 @@ const columnDefs = [
     field: "riskScore",
     width: 150,
     sortable: true,
+    getQuickFilterText: (params) => `${params.data.riskScore} ${(params.data.factors || []).join(" ")}`,
     cellRenderer: (params) => {
       const score = Number(params.value);
       let tierClass = "safe";
@@ -302,6 +401,9 @@ const columnDefs = [
   }
 ];
 
+// Segmented Risk Triage Filter State
+let currentRiskFilter = "all";
+
 // AG Grid Options (Enterprise Mode)
 const gridOptions = {
   columnDefs: columnDefs,
@@ -334,6 +436,18 @@ const gridOptions = {
   headerHeight: 46,
   pagination: true,
   paginationPageSize: 10,
+  isExternalFilterPresent: () => currentRiskFilter !== "all",
+  doesExternalFilterPass: (node) => {
+    const score = node.data.riskScore;
+    if (currentRiskFilter === "critical") return score >= 7.0;
+    if (currentRiskFilter === "review") return score >= 4.0 && score < 7.0;
+    if (currentRiskFilter === "safe") return score < 4.0;
+    return true;
+  },
+  rowClassRules: {
+    "row-glow-fraud": (params) => !!params.data._justAdded && params.data._flashType === "fraud",
+    "row-glow-safe": (params) => !!params.data._justAdded && params.data._flashType === "safe"
+  },
   onRowClicked: (event) => {
     // Open case modal on row click
     if (event.data) {
@@ -341,6 +455,23 @@ const gridOptions = {
     }
   }
 };
+
+/* --------------------------------------------------------------------------
+   Live Row Insertion Helper (Green/Red Glow Animation)
+   -------------------------------------------------------------------------- */
+function insertRowWithGlow(row) {
+  row._justAdded = true;
+  row._flashType = row.riskScore >= 7.0 ? "fraud" : "safe";
+  if (!gridApi) return;
+  const result = gridApi.applyTransaction({ add: [row], addIndex: 0 });
+  const node = result && result.add && result.add[0];
+  if (node) {
+    setTimeout(() => {
+      node.data._justAdded = false;
+      gridApi.redrawRows({ rowNodes: [node] });
+    }, 1800);
+  }
+}
 
 /* --------------------------------------------------------------------------
    Initialization
@@ -365,6 +496,7 @@ const BACKEND_URL = (window.location.port === "8088") ? "http://localhost:8085" 
 let sseConnection = null;
 let isSentinelRunning = false;
 let sentinelInterval = null;
+let pendingScenarioStart = null;
 
 function initSSEConnection() {
   const statusTag = document.getElementById("backendStatusTag");
@@ -399,6 +531,11 @@ function initSSEConnection() {
 }
 
 function handleIncomingBackendEvent(data) {
+  if (pendingScenarioStart !== null) {
+    recordDecisionLatency(performance.now() - pendingScenarioStart);
+    pendingScenarioStart = null;
+  }
+
   const orderId = data.order_id || `5O${Math.floor(100000 + Math.random() * 900000)}`;
   const riskScore = parseFloat(data.risk_score || 0.0);
   const shouldActuate = !!data.should_actuate;
@@ -437,6 +574,9 @@ function handleIncomingBackendEvent(data) {
   const elasticIntel = data.investigation_result?.elastic_threat_intel || data.elastic_threat_intel || null;
   const kernelBrowser = data.investigation_result?.kernel_browser_audit || data.kernel_browser_audit || null;
   const zapierMcp = data.actuator_result?.zapier_mcp || data.zapier_mcp || null;
+  const captureId = data.capture_id || data.actuator_result?.capture_id || data.actuator_result?.authorization_id || "N/A (Not Actuated)";
+  const ipCountry = data.ip_country || purchaseUnits[0]?.shipping?.address?.country_code || "US";
+  const isoTimestamp = data.timestamp || new Date().toISOString();
 
   const row = {
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -456,6 +596,9 @@ function handleIncomingBackendEvent(data) {
     elasticIntel: elasticIntel,
     kernelBrowser: kernelBrowser,
     zapierMcp: zapierMcp,
+    captureId: captureId,
+    ipCountry: ipCountry,
+    isoTimestamp: isoTimestamp,
     rawJson: data
   };
 
@@ -468,10 +611,8 @@ function handleIncomingBackendEvent(data) {
   }
   updateKpiDisplay();
 
-  // Apply row to AG Grid table with live animation
-  if (gridApi) {
-    gridApi.applyTransaction({ add: [row], addIndex: 0 });
-  }
+  // Apply row to AG Grid table with live risk-aware glow animation
+  insertRowWithGlow(row);
 
   // Stream into Bryntum Scheduler Timeline
   if (typeof window.addDisputeToBryntumScheduler === 'function') {
@@ -480,6 +621,7 @@ function handleIncomingBackendEvent(data) {
 }
 
 async function triggerBackendScenario(scenarioName, fallbackFn) {
+  pendingScenarioStart = performance.now();
   try {
     const res = await fetch(`${BACKEND_URL}/simulate-scenario/${scenarioName}`, { method: "POST" });
     if (!res.ok) {
@@ -488,6 +630,7 @@ async function triggerBackendScenario(scenarioName, fallbackFn) {
     // Event will arrive via SSE stream automatically!
   } catch (err) {
     console.warn(`Backend call failed (${err.message}), using client-side fallback.`);
+    pendingScenarioStart = null;
     if (fallbackFn) fallbackFn();
   }
 }
@@ -526,12 +669,42 @@ function setupEventListeners() {
     });
   }
 
-  // Quick Filter Input
+  // Quick Filter Input (searches Order ID, Payer Email, Payer ID, Risk Vector)
   const quickFilter = document.getElementById("quickFilterInput");
+  const quickFilterClearBtn = document.getElementById("quickFilterClearBtn");
   quickFilter.addEventListener("input", (e) => {
     if (gridApi) {
       gridApi.setGridOption("quickFilterText", e.target.value);
     }
+    if (quickFilterClearBtn) {
+      quickFilterClearBtn.classList.toggle("hidden", !e.target.value);
+    }
+  });
+  if (quickFilterClearBtn) {
+    quickFilterClearBtn.addEventListener("click", () => {
+      quickFilter.value = "";
+      if (gridApi) gridApi.setGridOption("quickFilterText", "");
+      quickFilterClearBtn.classList.add("hidden");
+      quickFilter.focus();
+    });
+  }
+
+  // Segmented Risk Triage Filter Bar
+  const riskFilterBtns = {
+    all: document.getElementById("riskFilterAllBtn"),
+    critical: document.getElementById("riskFilterCriticalBtn"),
+    review: document.getElementById("riskFilterReviewBtn"),
+    safe: document.getElementById("riskFilterSafeBtn")
+  };
+  Object.entries(riskFilterBtns).forEach(([key, btn]) => {
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      currentRiskFilter = key;
+      Object.values(riskFilterBtns).forEach((b) => b && b.classList.remove("active"));
+      btn.classList.add("active");
+      if (gridApi) gridApi.onFilterChanged();
+      logTerminal(`[SYSTEM] Risk triage filter set to: ${key.toUpperCase()}.`, "system");
+    });
   });
 
   // Export CSV Button
@@ -643,12 +816,14 @@ function setupEventListeners() {
     };
 
     try {
+      pendingScenarioStart = performance.now();
       await fetch(`${BACKEND_URL}/process-transaction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(customPayload)
       });
     } catch (err) {
+      pendingScenarioStart = null;
       simulateTransaction(name, amount, category, `Custom transaction from ${location}`, amount > 2000 ? 8.8 : 2.1, amount > 2000 ? "Auto-Refunded (PayPal)" : "Approved");
     }
     customModal.classList.add("hidden");
@@ -678,6 +853,15 @@ function setupEventListeners() {
       alert("Case File JSON copied to clipboard!");
     });
   });
+
+  // Dispute Evidence Package Generator
+  document.getElementById("copyDisputeBriefBtn").addEventListener("click", () => {
+    if (!currentOpenTx) return;
+    const markdown = generateDisputeEvidencePackage(currentOpenTx);
+    navigator.clipboard.writeText(markdown).then(() => {
+      showToast("PayPal Resolution Center dispute package copied to clipboard!");
+    });
+  });
 }
 
 /* --------------------------------------------------------------------------
@@ -688,6 +872,7 @@ function simulateTransaction(customerName, amount, category, description, riskSc
   const now = new Date();
   const timeStr = now.toTimeString().split(" ")[0];
   const txId = `tx_${Date.now()}`;
+  const decisionStartTime = performance.now();
 
   logTerminal(`[PayPal Webhook] Ingested order #PP-2026-${orderNum} for ${customerName} ($${amount.toFixed(2)} USD).`, "monitor");
 
@@ -754,6 +939,9 @@ function simulateTransaction(customerName, amount, category, description, riskSc
       justification: `Gemini 2.5 Assessment: ${description}. Evaluated against Elasticsearch threat memory. Risk grade: ${riskScore >= 7 ? "CRITICAL FRAUD" : "VERIFIED SAFE"}.`,
       factors: riskScore >= 7.0 ? ["Velocity Spike", "Geo Anomaly", "Unusual Item Category"] : ["Verified Buyer", "Normal Spending"],
       elasticIntel: simElastic,
+      captureId: riskScore >= 7.0 ? `2GG${orderNum}CAPSIMX` : "N/A (Not Actuated)",
+      ipCountry: "US",
+      isoTimestamp: now.toISOString(),
       rawJson: {
         event_type: riskScore >= 7.0 ? "CHECKOUT.ORDER.VOIDED" : "PAYMENT.CAPTURE.COMPLETED",
         order_id: `PP-2026-${orderNum}`,
@@ -769,12 +957,11 @@ function simulateTransaction(customerName, amount, category, description, riskSc
 
     kpiState.totalVolume += amount;
     kpiState.totalTransactions += 1;
+    recordDecisionLatency(performance.now() - decisionStartTime);
     updateKpiDisplay();
 
-    // Insert into AG Grid at top (index 0) with live row animation!
-    if (gridApi) {
-      gridApi.applyTransaction({ add: [newTx], addIndex: 0 });
-    }
+    // Insert into AG Grid at top (index 0) with live risk-aware glow animation!
+    insertRowWithGlow(newTx);
 
     // Stream into Bryntum Scheduler Timeline
     if (typeof window.addDisputeToBryntumScheduler === 'function') {
@@ -795,6 +982,7 @@ function simulateVelocityBurst() {
 }
 
 function simulatePriceTamperingFallback() {
+  const decisionStartTime = performance.now();
   logTerminal(`[Channel3 API] Querying normalized catalog (100M+ products across 25,000+ retailers)...`, "monitor");
   setTimeout(() => {
     logTerminal(`[InvestigationAgent] Target item 'Apple MacBook Pro 16' has Fair Market Value of $3,499.00.`, "investigation");
@@ -822,6 +1010,9 @@ function simulatePriceTamperingFallback() {
     status: "Auto-Refunded (PayPal)",
     justification: "Channel3 Product Intelligence Alert: Cart Price Tampering detected! Order charged $149.00 for 'Apple MacBook Pro 16-inch M3 Max' (Verified Market Value: $3,499.00, Variance: -95.7%). Immediate PayPal Payments v2 refund_capture executed. Kernel Cloud Browser Mystery Shopper (<30ms unikernel) confirmed DOM injection attack on storefront.",
     factors: ["CHANNEL3_PRICE_TAMPERING", "Cart Slashing (-95.7%)", "KERNEL_DOM_TAMPERING_DETECTED", "Severe FMV Discrepancy"],
+    captureId: `2GG${orderNum}CAPTAMPER`,
+    ipCountry: "US",
+    isoTimestamp: new Date().toISOString(),
     channel3: {
       item_queried: "Apple MacBook Pro 16",
       verified_title: "Apple MacBook Pro 16-inch M3 Max 36GB RAM 1TB SSD",
@@ -907,11 +1098,10 @@ function simulatePriceTamperingFallback() {
   kpiState.totalTransactions += 1;
   kpiState.fraudIntercepted += 3499.00;
   kpiState.attacksCount += 1;
+  recordDecisionLatency(performance.now() - decisionStartTime);
   updateKpiDisplay();
 
-  if (gridApi) {
-    gridApi.applyTransaction({ add: [newTx], addIndex: 0 });
-  }
+  insertRowWithGlow(newTx);
   if (typeof window.addDisputeToBryntumScheduler === 'function') {
     window.addDisputeToBryntumScheduler(orderNum, 149.00, 9.8, "Auto-Refunded (PayPal)", "Channel3 Price Slashing (-95.7%)");
   }
@@ -920,13 +1110,119 @@ function simulatePriceTamperingFallback() {
 /* --------------------------------------------------------------------------
    UI Helpers & Case File Modal
    -------------------------------------------------------------------------- */
+function computeP90Latency(samples) {
+  if (!samples.length) return null;
+  const sorted = [...samples].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.ceil(0.9 * sorted.length) - 1);
+  return sorted[idx];
+}
+
+function recordDecisionLatency(ms) {
+  if (!isFinite(ms) || ms <= 0) return;
+  kpiState.latencySamples.push(ms);
+  if (kpiState.latencySamples.length > 30) kpiState.latencySamples.shift();
+  const sseLatencyEl = document.getElementById("sseLatencyVal");
+  if (sseLatencyEl) sseLatencyEl.innerText = Math.round(ms);
+}
+
+function flashKpiValue(el) {
+  if (!el) return;
+  el.classList.remove("kpi-flash");
+  void el.offsetWidth;
+  el.classList.add("kpi-flash");
+}
+
 function updateKpiDisplay() {
   const volFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(kpiState.totalVolume);
   const fraudFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(kpiState.fraudIntercepted);
 
-  document.getElementById("totalVolume").innerText = volFormatted;
-  document.getElementById("totalTransactions").innerText = kpiState.totalTransactions.toLocaleString();
-  document.getElementById("fraudIntercepted").innerText = fraudFormatted;
+  const volEl = document.getElementById("totalVolume");
+  const txEl = document.getElementById("totalTransactions");
+  const fraudEl = document.getElementById("fraudIntercepted");
+  const latencyEl = document.getElementById("avgLatency");
+  const attacksEl = document.getElementById("fraudAttacksCount");
+  const trendEl = document.getElementById("latencyTrendLabel");
+
+  volEl.innerText = volFormatted;
+  txEl.innerText = kpiState.totalTransactions.toLocaleString();
+  fraudEl.innerText = fraudFormatted;
+  if (attacksEl) attacksEl.innerText = `${kpiState.attacksCount} Attack${kpiState.attacksCount === 1 ? "" : "s"} Mitigated`;
+
+  const p90 = computeP90Latency(kpiState.latencySamples);
+  if (latencyEl) latencyEl.innerText = p90 !== null ? `${(p90 / 1000).toFixed(2)}s` : "—";
+  if (trendEl) {
+    trendEl.innerText = kpiState.latencySamples.length
+      ? `P90 across ${kpiState.latencySamples.length} decision${kpiState.latencySamples.length === 1 ? "" : "s"}`
+      : "Awaiting first decision";
+  }
+
+  [volEl, txEl, fraudEl, latencyEl].forEach(flashKpiValue);
+}
+
+function showToast(message) {
+  let container = document.querySelector(".aegis-toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "aegis-toast-container";
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement("div");
+  toast.className = "aegis-toast";
+  toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${message}`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function generateDisputeEvidencePackage(tx) {
+  const raw = tx.rawJson || {};
+  const actuatorRes = raw.actuator_result || {};
+  const captureId = tx.captureId || actuatorRes.capture_id || actuatorRes.authorization_id || "N/A (Not Actuated)";
+  const isoTimestamp = tx.isoTimestamp || raw.timestamp || raw.create_time || raw.transaction_data?.create_time || new Date().toISOString();
+  const ipCountry = tx.ipCountry || raw.ip_country || "US";
+
+  const ch3 = tx.channel3 || raw.investigation_result?.channel3_product_data || {};
+  const kernel = tx.kernelBrowser || raw.investigation_result?.kernel_browser_audit || {};
+  const elastic = tx.elasticIntel || raw.investigation_result?.elastic_threat_intel || {};
+  const zapier = tx.zapierMcp || raw.actuator_result?.zapier_mcp || {};
+  const zActions = zapier.actions || {};
+
+  return `# PayPal Resolution Center — Dispute Evidence Package
+## Order #${tx.orderId}
+
+### 1. Transaction Meta
+- PayPal Order ID: ${tx.orderId}
+- Capture ID: ${captureId}
+- Payer Email: ${tx.email}
+- Timestamp (ISO 8601): ${isoTimestamp}
+- IP / Shipping Country: ${ipCountry}
+- Amount: $${tx.amount.toFixed(2)} USD
+- AegisPay Risk Score: ${tx.riskScore.toFixed(1)}/10.0
+
+### 2. Channel3 Fair Market Value Audit
+- Item: ${ch3.verified_title || ch3.item_queried || "N/A"}
+- Server (Market) Price: $${(ch3.market_price || 0).toFixed(2)}
+- Cart Price Charged: $${(ch3.order_price || tx.amount).toFixed(2)}
+- Variance: ${ch3.variance_pct !== undefined ? ch3.variance_pct + "%" : "N/A"}
+
+### 3. KERNEL Unikernel DOM Audit & Replay
+- Headful Browser Audit Verdict: ${kernel.dom_tampering_detected !== undefined ? (kernel.dom_tampering_detected ? "CONFIRMED DOM TAMPERING" : "VERIFIED CLEAN") : "N/A"}
+- Cold Start: ${kernel.cold_start_ms ? kernel.cold_start_ms + "ms" : "N/A"}
+- 24fps Session Replay: ${kernel.session_replay_url || "N/A"}
+
+### 4. Elasticsearch Threat Intelligence
+- Matched Incident ID: ${elastic.incident_id || "N/A"}
+- Vector Similarity: ${elastic.similarity_pct !== undefined ? elastic.similarity_pct + "%" : "N/A"}
+- ES|QL Query: ${elastic.esql_signature || "N/A"}
+
+### 5. Zapier MCP Multi-App Mitigation Audit
+- Shopify / ShipStation Warehouse Freeze: ${zActions.warehouse_hold?.fulfillment_status || "N/A"}
+- Slack Broadcast Receipt: ${zActions.slack?.action_id || zActions.slack?.status || "N/A"}
+- Twilio Buyer Alert: ${zActions.buyer_sms?.status || "N/A"}
+- Zendesk Case ID: ${zActions.zendesk?.ticket_id || "N/A"}
+
+### 6. Gemini 2.5 Flash Investigation Justification
+${tx.justification}
+`;
 }
 
 function logTerminal(message, type = "system") {
@@ -955,6 +1251,7 @@ window.openCaseFileById = function(txId) {
 };
 
 function openCaseFile(tx) {
+  currentOpenTx = tx;
   document.getElementById("modalOrderId").innerText = `Order #${tx.orderId}`;
   document.getElementById("modalCustomerName").innerText = tx.customer;
   document.getElementById("modalAccountId").innerText = tx.account;

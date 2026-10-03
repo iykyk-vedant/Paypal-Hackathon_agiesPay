@@ -38,21 +38,22 @@
           <span class="brand-subtitle">Autonomous Multi-Agent Fraud Shield</span>
         </div>
       </div>
-      <div class="hackathon-badges">
-        <span class="badge paypal-badge"><i class="fa-brands fa-paypal"></i> PayPal Orders v2</span>
-        <span class="badge aggrid-badge"><i class="fa-solid fa-table-cells"></i> AG Grid Enterprise</span>
-        <span class="badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #FBBF24;"><i class="fa-solid fa-calendar-days"></i> Bryntum</span>
-        <span class="badge" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38BDF8;"><i class="fa-solid fa-cube"></i> Channel3</span>
-        <span class="badge" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.4); color: #FACC15;"><i class="fa-solid fa-database"></i> Elastic</span>
-        <span class="badge" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #C084FC;"><i class="fa-solid fa-window-maximize"></i> KERNEL (<span style="font-weight:700;">&lt;30ms</span>)</span>
-        <span class="badge" style="background: rgba(255, 74, 0, 0.15); border: 1px solid rgba(255, 74, 0, 0.4); color: #FF4A00;"><i class="fa-solid fa-bolt-lightning"></i> Zapier MCP</span>
+      <div class="subsystem-telemetry-bar" data-testid="subsystem-telemetry-bar">
+        <span class="sys-badge paypal" title="Active Gateway" data-testid="telemetry-paypal"><span class="dot green"></span> PayPal Orders v2</span>
+        <span class="sys-badge aggrid" title="Real-Time Ingestion Engine" data-testid="telemetry-aggrid"><span class="dot green"></span> AG Grid v32 Enterprise</span>
+        <span class="sys-badge bryntum" title="Dispute SLA &amp; Response Horizon" data-testid="telemetry-bryntum"><span class="dot green"></span> Bryntum SLA Horizon</span>
+        <span class="sys-badge channel3" title="Product Catalog Discrepancy Engine" data-testid="telemetry-channel3"><span class="dot blue"></span> Channel3 FMV Engine</span>
+        <span class="sys-badge elastic" title="ES|QL Vector Threat Memory" data-testid="telemetry-elastic"><span class="dot yellow"></span> Elastic Serverless ES|QL</span>
+        <span class="sys-badge kernel" title="Unikernel DOM Audit &bull; P99 &lt; 30ms" data-testid="telemetry-kernel"><span class="dot purple"></span> KERNEL Cloud Browser (&lt;30ms)</span>
+        <span class="sys-badge zapier" title="Multi-App Autonomous Actuation" data-testid="telemetry-zapier"><span class="dot orange"></span> Zapier MCP v1.0</span>
       </div>
     </div>
 
     <div class="header-right">
-      <div class="live-status-pill">
-        <span class="status-dot pulsing"></span>
+      <div class="live-status-pill" id="liveStatusPill" data-testid="live-status-pill">
+        <span class="status-dot pulsing heartbeat"></span>
         <span class="status-label">Autonomous Agents Online (4/4)</span>
+        <span class="live-latency-badge">SSE Live &bull; <span id="sseLatencyVal">—</span>ms latency</span>
       </div>
       <button id="openSimulateModalBtn" class="btn btn-primary">
         <i class="fa-solid fa-bolt"></i> New Simulation
@@ -71,8 +72,8 @@
         </div>
         <div class="kpi-info">
           <span class="kpi-title">Total Monitored Volume</span>
-          <h2 id="totalVolume" class="kpi-value">$142,890.00</h2>
-          <span class="kpi-delta positive"><i class="fa-solid fa-arrow-trend-up"></i> +18.4% today</span>
+          <h2 id="totalVolume" class="kpi-value">$0.00</h2>
+          <span class="kpi-subtext">Live PayPal session total</span>
         </div>
       </div>
 
@@ -82,7 +83,7 @@
         </div>
         <div class="kpi-info">
           <span class="kpi-title">Transactions Evaluated</span>
-          <h2 id="totalTransactions" class="kpi-value">1,482</h2>
+          <h2 id="totalTransactions" class="kpi-value">0</h2>
           <span class="kpi-subtext">Real-time A2A Stream</span>
         </div>
       </div>
@@ -93,8 +94,8 @@
         </div>
         <div class="kpi-info">
           <span class="kpi-title">Fraud Intercepted</span>
-          <h2 id="fraudIntercepted" class="kpi-value">$19,650.00</h2>
-          <span class="kpi-delta warning"><i class="fa-solid fa-shield-virus"></i> 15 Attacks Mitigated</span>
+          <h2 id="fraudIntercepted" class="kpi-value">$0.00</h2>
+          <span class="kpi-delta warning"><i class="fa-solid fa-shield-virus"></i> <span id="fraudAttacksCount">0 Attacks Mitigated</span></span>
         </div>
       </div>
 
@@ -103,9 +104,9 @@
           <i class="fa-solid fa-stopwatch-20"></i>
         </div>
         <div class="kpi-info">
-          <span class="kpi-title">Avg AI Decision Latency</span>
-          <h2 id="avgLatency" class="kpi-value">1.18s</h2>
-          <span class="kpi-delta positive"><i class="fa-solid fa-check"></i> Sub-second P90</span>
+          <span class="kpi-title">Decision Latency (P90)</span>
+          <h2 id="avgLatency" class="kpi-value">—</h2>
+          <span class="kpi-delta positive"><i class="fa-solid fa-check"></i> <span id="latencyTrendLabel">Awaiting first decision</span></span>
         </div>
       </div>
     </section>
@@ -140,7 +141,8 @@
         </div>
         <div class="search-input-wrapper">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="quickFilterInput" placeholder="Search orders, customers, status..." />
+          <input type="text" id="quickFilterInput" placeholder="Search Order ID, Payer Email, Payer ID, Risk Vector..." />
+          <button id="quickFilterClearBtn" class="search-clear-btn hidden" data-testid="quick-filter-clear-btn" title="Clear search"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <button id="exportCsvBtn" class="btn btn-secondary" title="Export AG Grid to CSV">
           <i class="fa-solid fa-file-csv"></i> Export CSV
@@ -163,13 +165,21 @@
       <div class="grid-card-header">
         <div class="grid-header-title">
           <h3><i class="fa-solid fa-table-list"></i> Real-Time PayPal Transaction Surveillance</h3>
-          <span class="grid-subtitle">Powered by AG Grid Quartz Dark • Click any row to inspect Gemini AI Case File</span>
+          <span class="grid-subtitle">Powered by AG Grid Quartz Dark • Click any row to inspect the Gemini AI Case File</span>
         </div>
         <div class="grid-badge-legend">
           <span class="legend-item"><span class="badge badge-safe">0.0 – 3.9 Safe</span></span>
           <span class="legend-item"><span class="badge badge-review">4.0 – 6.9 Review</span></span>
           <span class="legend-item"><span class="badge badge-fraud">7.0 – 10.0 Fraud Lock</span></span>
         </div>
+      </div>
+
+      <!-- Segmented Risk Triage Filter -->
+      <div class="risk-filter-segment-bar" data-testid="risk-filter-bar">
+        <button class="risk-seg-btn active" id="riskFilterAllBtn" data-filter="all" data-testid="risk-filter-all-btn">All Transactions</button>
+        <button class="risk-seg-btn critical" id="riskFilterCriticalBtn" data-filter="critical" data-testid="risk-filter-critical-btn">Critical Risk (&ge;7.0)</button>
+        <button class="risk-seg-btn review" id="riskFilterReviewBtn" data-filter="review" data-testid="risk-filter-review-btn">Elevated Review (4.0&ndash;6.9)</button>
+        <button class="risk-seg-btn safe" id="riskFilterSafeBtn" data-filter="safe" data-testid="risk-filter-safe-btn">Approved Safe (&lt;4.0)</button>
       </div>
 
       <!-- AG Grid Mounting Node -->
@@ -448,6 +458,13 @@
             <button id="copyJsonBtn" class="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
           </div>
           <pre id="modalRawJson" class="json-viewer"></pre>
+        </div>
+
+        <!-- Dispute Evidence Package Generator -->
+        <div class="dispute-evidence-bar">
+          <button id="copyDisputeBriefBtn" class="btn btn-outline-info" data-testid="copy-dispute-brief-btn">
+            <i class="fa-solid fa-file-shield"></i> Copy Dispute Evidence Package
+          </button>
         </div>
       </div>
 

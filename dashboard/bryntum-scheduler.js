@@ -1,7 +1,6 @@
 /**
- * AegisPay — Bryntum Scheduler Integration
+ * AegisPay Enterprise Dispute Horizon & Response Scheduling Engine
  * Autonomous PayPal Dispute Triage & Response Deadline Horizon
- * Submitting for "Best Use of Bryntum" Hackathon Prize
  */
 
 import { Scheduler } from './bryntum/scheduler.module.js';
@@ -61,6 +60,33 @@ const INITIAL_EVENTS = [
     endDate: '2026-10-12 17:00',
     eventColor: 'blue',
     iconCls: 'fa-solid fa-scale-balanced'
+  },
+  {
+    id: 'disp-06',
+    resourceId: 'analyst-marcus',
+    name: '📋 Evidence Assembled — Channel3 FMV + KERNEL DOM Audit Bundle',
+    startDate: '2026-10-03 12:00',
+    endDate: '2026-10-05 17:00',
+    eventColor: 'teal',
+    iconCls: 'fa-solid fa-folder-open'
+  },
+  {
+    id: 'disp-07',
+    resourceId: 'analyst-elena',
+    name: '🧑‍💼 Merchant Ops Review — Dispute Package Sign-off',
+    startDate: '2026-10-05 17:00',
+    endDate: '2026-10-08 17:00',
+    eventColor: 'orange',
+    iconCls: 'fa-solid fa-user-check'
+  },
+  {
+    id: 'disp-08',
+    resourceId: 'analyst-elena',
+    name: '🚩 PayPal Resolution Center SLA Deadline (10-Day Response Window)',
+    startDate: '2026-10-08 17:00',
+    endDate: '2026-10-13 17:00',
+    eventColor: 'red',
+    iconCls: 'fa-solid fa-flag-checkered'
   }
 ];
 

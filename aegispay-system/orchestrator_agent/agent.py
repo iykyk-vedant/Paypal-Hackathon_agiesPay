@@ -8,6 +8,7 @@ import json
 import uuid
 import asyncio
 from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -209,10 +210,18 @@ class OrchestratorService:
                 f"Within safe operating threshold ({self.risk_threshold}). No mitigation required."
             )
 
+        risk_signals_ctx = investigation_result.get("risk_signals", {}) if investigation_result else {}
+        ip_country = risk_signals_ctx.get("shipping_country") or risk_signals_ctx.get("payer_country") or "US"
+        capture_id = None
+        if actuator_result:
+            capture_id = actuator_result.get("capture_id") or actuator_result.get("authorization_id")
+
         final_record = {
             "session_id": session_id,
             "order_id": order_id,
-            "timestamp": transaction_data.get("create_time") or transaction_data.get("timestamp"),
+            "timestamp": transaction_data.get("create_time") or transaction_data.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+            "ip_country": ip_country,
+            "capture_id": capture_id,
             "risk_score": risk_score,
             "risk_level": risk_level,
             "should_actuate": should_actuate,

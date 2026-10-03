@@ -4,7 +4,7 @@
    ========================================================================== */
 
 :root {
-  --bg-base: #0A0E17;
+  --bg-base: #0B0F17;
   --bg-surface: #0F172A;
   --bg-card: #131D31;
   --bg-card-hover: #1E293B;
@@ -51,6 +51,10 @@
 
 body {
   background-color: var(--bg-base);
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(56, 189, 248, 0.05), transparent 45%),
+    radial-gradient(circle at 85% 100%, rgba(139, 92, 246, 0.04), transparent 50%);
+  background-attachment: fixed;
   color: var(--text-main);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
@@ -121,10 +125,42 @@ h1, h2, h3, h4 {
   font-weight: 600;
 }
 
-.hackathon-badges {
+/* Subsystem Telemetry Bar — Live Enterprise Architecture Health */
+.subsystem-telemetry-bar {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
+
+.sys-badge {
+  font-size: 11px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 9999px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  cursor: default;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.sys-badge:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.sys-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.sys-badge .dot.green { background: #10B981; box-shadow: 0 0 5px rgba(16, 185, 129, 0.8); }
+.sys-badge .dot.blue { background: #38BDF8; box-shadow: 0 0 5px rgba(56, 189, 248, 0.8); }
+.sys-badge .dot.yellow { background: #FACC15; box-shadow: 0 0 5px rgba(250, 204, 21, 0.8); }
+.sys-badge .dot.purple { background: #C084FC; box-shadow: 0 0 5px rgba(192, 132, 252, 0.8); }
+.sys-badge .dot.orange { background: #FF6A28; box-shadow: 0 0 5px rgba(255, 106, 40, 0.8); }
 
 .badge {
   font-size: 11px;
@@ -135,24 +171,6 @@ h1, h2, h3, h4 {
   align-items: center;
   gap: 6px;
   border: 1px solid transparent;
-}
-
-.badge.paypal-badge {
-  background: rgba(0, 112, 186, 0.15);
-  color: #38BDF8;
-  border-color: rgba(56, 189, 248, 0.3);
-}
-
-.badge.aggrid-badge {
-  background: rgba(245, 158, 11, 0.15);
-  color: #FBBF24;
-  border-color: rgba(251, 191, 36, 0.3);
-}
-
-.badge.gemini-badge {
-  background: var(--ai-purple-bg);
-  color: #C084FC;
-  border-color: rgba(192, 132, 252, 0.3);
 }
 
 .header-right {
@@ -174,6 +192,14 @@ h1, h2, h3, h4 {
   color: var(--safe-green);
 }
 
+.live-latency-badge {
+  color: #6EE7B7;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(16, 185, 129, 0.3);
+}
+
 /* Static clean glowing dot - Zero continuous GPU repaint */
 .status-dot {
   width: 8px;
@@ -181,6 +207,15 @@ h1, h2, h3, h4 {
   border-radius: 50%;
   background-color: var(--safe-green);
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+}
+
+.status-dot.heartbeat {
+  animation: heartbeatPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes heartbeatPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.6; }
 }
 
 /* Buttons */
@@ -1578,5 +1613,159 @@ h1, h2, h3, h4 {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   overflow: hidden;
   background: #11151c;
+}
+
+/* ==========================================================================
+   Enterprise Glassmorphism Polish & Fraud Ops Upgrades
+   ========================================================================== */
+
+.kpi-card,
+.action-bar-card,
+.grid-section,
+.terminal-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.case-file-modal {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  animation: slideInModal 0.3s ease-out;
+}
+
+.sim-form-modal {
+  animation: fadeScaleIn 0.25s ease-out;
+}
+
+@keyframes slideInModal {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeScaleIn {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.btn-outline-info {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38BDF8;
+  width: 100%;
+  justify-content: center;
+}
+.btn-outline-info:hover { background: rgba(56, 189, 248, 0.22); }
+
+.dispute-evidence-bar {
+  padding-top: 4px;
+}
+
+/* KPI Micro-counter flash animation */
+.kpi-value.kpi-flash {
+  animation: kpiFlash 0.6s ease;
+}
+@keyframes kpiFlash {
+  0% { color: #38BDF8; transform: scale(1.08); }
+  100% { color: #fff; transform: scale(1); }
+}
+
+/* Segmented Risk Triage Filter Bar */
+.risk-filter-segment-bar {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+.risk-seg-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.risk-seg-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-main); }
+
+.risk-seg-btn.active {
+  color: #fff;
+  border-color: transparent;
+}
+.risk-seg-btn.active[data-filter="all"] { background: var(--paypal-blue); }
+.risk-seg-btn.active[data-filter="critical"] { background: var(--fraud-red); }
+.risk-seg-btn.active[data-filter="review"] { background: var(--review-amber); }
+.risk-seg-btn.active[data-filter="safe"] { background: var(--safe-green); }
+
+/* Quick Filter Clear Button */
+.search-input-wrapper input {
+  padding-right: 32px;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+.search-clear-btn:hover { color: var(--text-main); }
+.search-clear-btn.hidden { display: none; }
+
+/* AG Grid Live Row Insertion Glow */
+.ag-theme-quartz-dark .row-glow-safe {
+  animation: rowGlowSafe 1.8s ease-out;
+}
+.ag-theme-quartz-dark .row-glow-fraud {
+  animation: rowGlowFraud 1.8s ease-out;
+}
+@keyframes rowGlowSafe {
+  0% { box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.9); background-color: rgba(16, 185, 129, 0.14); }
+  100% { box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0); background-color: transparent; }
+}
+@keyframes rowGlowFraud {
+  0% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.9); background-color: rgba(239, 68, 68, 0.16); }
+  100% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0); background-color: transparent; }
+}
+
+/* Toast Notification */
+.aegis-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aegis-toast {
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #F8FAFC;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  animation: toastSlideIn 0.25s ease-out, toastFadeOut 0.3s ease-in 2.7s forwards;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes toastFadeOut {
+  to { transform: translateY(8px); opacity: 0; }
 }
 

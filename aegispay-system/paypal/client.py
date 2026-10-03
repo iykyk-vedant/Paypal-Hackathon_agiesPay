@@ -381,6 +381,8 @@ class PayPalClient:
             "order_id": order_data.get("id"),
             "amount_usd": amount_val,
             "payer_email": email,
+            "payer_country": payer_country,
+            "shipping_country": shipping_country,
             "signals_detected": signals,
             "signals_count": len(signals),
             "preliminary_threat_level": "CRITICAL" if len(signals) >= 2 else "ELEVATED" if len(signals) == 1 else "NOMINAL",
