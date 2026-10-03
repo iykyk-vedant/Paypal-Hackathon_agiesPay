@@ -40,6 +40,12 @@ try:
 except ImportError:
     HAS_ADK = False
 
+try:
+    from google import genai
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("aegispay.investigation_agent")
@@ -75,36 +81,39 @@ class InvestigationService:
         logger.info("Initializing PayPal InvestigationService...")
         self.paypal_client = PayPalClient()
         self.gemini_api_key = os.environ.get("GEMINI_API_KEY")
-        self.has_llm = bool(
-            HAS_ADK
-            and self.gemini_api_key
-            and not self.gemini_api_key.startswith("your_")
-            and len(self.gemini_api_key) > 15
-        )
-
         self.channel3_client = Channel3Client()
         self.elastic_client = ElasticThreatIntelClient()
         self.kernel_client = KernelBrowserClient()
+        self.has_llm = False
 
-        if self.has_llm:
-            try:
-                self.llm_agent = LlmAgent(
-                    name="investigation_agent",
-                    model=Gemini(api_key=self.gemini_api_key, model="gemini-2.5-flash"),
-                    instruction=PAYPAL_INVESTIGATION_PROMPT,
-                )
-                self.session_service = InMemorySessionService()
-                self.runner = Runner(
-                    app_name="investigation_agent_app",
-                    agent=self.llm_agent,
-                    session_service=self.session_service,
-                )
-                self.default_user_id = "orchestrator"
-                logger.info("Gemini 2.5 Flash Investigation runner initialized.")
-            except Exception as e:
-                logger.warning("Could not initialize ADK LLM runner: %s. Using deterministic risk engine.", e)
-                self.has_llm = False
-        else:
+        if self.gemini_api_key and not self.gemini_api_key.startswith("your_") and len(self.gemini_api_key) > 15:
+            if HAS_ADK:
+                try:
+                    self.llm_agent = LlmAgent(
+                        name="investigation_agent",
+                        model=Gemini(api_key=self.gemini_api_key, model="gemini-2.5-flash"),
+                        instruction=PAYPAL_INVESTIGATION_PROMPT,
+                    )
+                    self.session_service = InMemorySessionService()
+                    self.runner = Runner(
+                        app_name="investigation_agent_app",
+                        agent=self.llm_agent,
+                        session_service=self.session_service,
+                    )
+                    self.default_user_id = "orchestrator"
+                    self.has_llm = True
+                    logger.info("Gemini 2.5 Flash Investigation runner initialized (Google ADK).")
+                except Exception as e:
+                    logger.warning("Could not initialize ADK LLM runner: %s.", e)
+            elif HAS_GENAI:
+                try:
+                    self.genai_client = genai.Client(api_key=self.gemini_api_key)
+                    self.has_llm = True
+                    logger.info("Gemini 2.5 Flash Client initialized via official google.genai SDK.")
+                except Exception as e:
+                    logger.warning("Could not initialize google.genai client: %s.", e)
+
+        if not self.has_llm:
             logger.info("Running InvestigationService with APIMatic-grounded heuristic risk engine.")
 
     async def investigate_transaction(self, transaction_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -181,6 +190,7 @@ class InvestigationService:
         analysis: Dict[str, Any] = {}
         if self.has_llm:
             prompt = (
+                f"{PAYPAL_INVESTIGATION_PROMPT}\n\n"
                 "Please investigate this PayPal transaction for fraud:\n"
                 f"Order Details:\n{json.dumps(order_details, indent=2)}\n\n"
                 f"Extracted Risk Signals:\n{json.dumps(risk_signals, indent=2)}\n\n"
@@ -188,36 +198,55 @@ class InvestigationService:
                 f"Elasticsearch Threat Intelligence:\n{json.dumps(elastic_intel, indent=2)}\n\n"
                 f"Kernel Cloud Browser Audit:\n{json.dumps(kernel_audit, indent=2)}\n\n"
                 f"Recent Disputes Context:\n{json.dumps(disputes, indent=2)}\n\n"
-                "Provide your risk assessment as JSON."
+                "Provide your risk assessment strictly as valid JSON adhering to the specified schema with keys: risk_score, risk_level, recommended_action, justification, signals."
             )
-            try:
-                message_content = types.Content(
-                    role="user",
-                    parts=[types.Part(text=prompt)],
-                )
-                user_id = "orchestrator"
-                session_id = str(uuid.uuid4())
-                await self.session_service.create_session(
-                    app_name=self.runner.app_name,
-                    user_id=user_id,
-                    session_id=session_id,
-                )
-                final_text = ""
-                async for event in self.runner.run_async(
-                    user_id=user_id,
-                    session_id=session_id,
-                    new_message=message_content,
-                ):
-                    if getattr(event, "content", None) and getattr(event.content, "parts", None):
-                        text_parts = [p.text for p in event.content.parts if getattr(p, "text", None)]
-                        if text_parts:
-                            final_text = "\n".join(text_parts)
+            if hasattr(self, "genai_client"):
+                try:
+                    response = self.genai_client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=prompt,
+                    )
+                    cleaned = response.text.strip().replace("```json", "").replace("```", "").strip()
+                    start = cleaned.find("{")
+                    end = cleaned.rfind("}")
+                    if start != -1 and end != -1:
+                        cleaned = cleaned[start:end+1]
+                    analysis = json.loads(cleaned)
+                    logger.info("Gemini 2.5 Flash (google.genai) investigation completed for %s: score=%s", order_id, analysis.get("risk_score"))
+                except Exception as e:
+                    logger.warning("Gemini 2.5 Flash SDK call fallback: %s", e)
+                    analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel, kernel_audit)
+            elif HAS_ADK and hasattr(self, "runner"):
+                try:
+                    message_content = types.Content(
+                        role="user",
+                        parts=[types.Part(text=prompt)],
+                    )
+                    user_id = "orchestrator"
+                    session_id = str(uuid.uuid4())
+                    await self.session_service.create_session(
+                        app_name=self.runner.app_name,
+                        user_id=user_id,
+                        session_id=session_id,
+                    )
+                    final_text = ""
+                    async for event in self.runner.run_async(
+                        user_id=user_id,
+                        session_id=session_id,
+                        new_message=message_content,
+                    ):
+                        if getattr(event, "content", None) and getattr(event.content, "parts", None):
+                            text_parts = [p.text for p in event.content.parts if getattr(p, "text", None)]
+                            if text_parts:
+                                final_text = "\n".join(text_parts)
 
-                cleaned = final_text.strip().replace("```json", "").replace("```", "").strip()
-                analysis = json.loads(cleaned)
-                logger.info("Gemini 2.5 Flash investigation completed for %s: %s", order_id, analysis)
-            except Exception as e:
-                logger.warning("LLM reasoning fallback: %s", e)
+                    cleaned = final_text.strip().replace("```json", "").replace("```", "").strip()
+                    analysis = json.loads(cleaned)
+                    logger.info("Gemini 2.5 Flash ADK investigation completed for %s: %s", order_id, analysis)
+                except Exception as e:
+                    logger.warning("LLM reasoning fallback: %s", e)
+                    analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel, kernel_audit)
+            else:
                 analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel, kernel_audit)
         else:
             analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel, kernel_audit)
