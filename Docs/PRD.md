@@ -78,6 +78,9 @@ To become the premier autonomous multi-agent trust layer for PayPal merchants, t
 ├────────────────────────┼─────────────┼──────────────────────────────────────┤
 │ Best Use of KERNEL     │ Sponsor     │ <30ms cloud browser infrastructure   │
 │                        │ Award       │ Mystery Shopper DOM audit & 24fps vid│
+├────────────────────────┼─────────────┼──────────────────────────────────────┤
+│ Best Use of Zapier MCP │ Sponsor     │ 9,000+ app incident response: Slack, │
+│                        │ Award       │ Shopify warehouse hold, Twilio & ZD  │
 └────────────────────────┴─────────────┴──────────────────────────────────────┘
 ```
 

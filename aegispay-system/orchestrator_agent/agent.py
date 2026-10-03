@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from paypal import PayPalClient
 from elasticsearch.client import ElasticThreatIntelClient
 from kernel import KernelBrowserClient
+from zapier import ZapierMcpClient
 
 try:
     from a2a.types import (
@@ -81,6 +82,7 @@ class OrchestratorService:
         self.actuator_url = ACTUATOR_URL
         self.elastic_client = ElasticThreatIntelClient()
         self.kernel_client = KernelBrowserClient()
+        self.zapier_client = ZapierMcpClient()
         self._http_client = httpx.AsyncClient(timeout=25.0)
 
     async def broadcast_event(self, event_data: Dict[str, Any]):
@@ -285,6 +287,41 @@ async def kernel_verify_tracking_endpoint(payload: Dict[str, Any]) -> Dict[str, 
     carrier = payload.get("carrier", "FedEx")
     tracking_number = payload.get("tracking_number", "794829104928")
     return orchestrator_service.kernel_client.verify_carrier_dispute_evidence(carrier, tracking_number)
+
+
+@app.get("/api/zapier/health")
+async def zapier_health_endpoint() -> Dict[str, Any]:
+    """Returns Zapier MCP multi-app gateway health status and active integrations."""
+    global orchestrator_service
+    if orchestrator_service is None:
+        orchestrator_service = OrchestratorService()
+    return orchestrator_service.zapier_client.health_check()
+
+
+@app.get("/api/zapier/tools")
+async def zapier_tools_endpoint() -> Dict[str, Any]:
+    """Lists all available Model Context Protocol (MCP) tools exposed by Zapier."""
+    global orchestrator_service
+    if orchestrator_service is None:
+        orchestrator_service = OrchestratorService()
+    return {"tools": orchestrator_service.zapier_client.list_available_tools()}
+
+
+@app.post("/api/zapier/trigger-incident")
+async def zapier_trigger_incident_endpoint(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Triggers an autonomous 4-app enterprise incident response via Zapier MCP."""
+    global orchestrator_service
+    if orchestrator_service is None:
+        orchestrator_service = OrchestratorService()
+    return orchestrator_service.zapier_client.trigger_multi_app_incident_response(
+        order_id=payload.get("order_id", "5O11016942TN401931"),
+        risk_score=float(payload.get("risk_score", 9.8)),
+        amount=float(payload.get("amount", 3499.00)),
+        action_executed=payload.get("action_executed", "refund_capture"),
+        justification=payload.get("justification", "AegisPay Autonomous Defense: Proactive fraud reversal"),
+        refund_id=payload.get("refund_id"),
+        replay_url=payload.get("replay_url"),
+    )
 
 
 @app.post("/process-transaction")

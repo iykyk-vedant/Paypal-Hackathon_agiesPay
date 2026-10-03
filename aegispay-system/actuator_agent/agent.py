@@ -18,6 +18,7 @@ import uvicorn
 # Ensure paypal client module is reachable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from paypal import PayPalClient
+from zapier.client import ZapierMcpClient
 
 try:
     from a2a.types import (
@@ -43,13 +44,14 @@ actuator_service = None
 class ActuatorService:
     """
     Enforces risk mitigation decisions by executing live PayPal Payments v2
-    authorizations/void and captures/refund actions.
+    authorizations/void and captures/refund actions, orchestrating enterprise incident response via Zapier MCP.
     """
 
     def __init__(self):
         logger.info("Initializing PayPal ActuatorService...")
         self.paypal_client = PayPalClient()
-        logger.info("ActuatorService initialized with PayPalClient (mode: %s).", self.paypal_client.mode)
+        self.zapier_client = ZapierMcpClient()
+        logger.info("ActuatorService initialized with PayPalClient (mode: %s) and ZapierMcpClient.", self.paypal_client.mode)
 
     async def execute_action(self, command_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -86,6 +88,17 @@ class ActuatorService:
                 note_to_payer=reason,
             )
 
+            # Trigger Zapier MCP multi-app enterprise incident response (Slack, Shopify, Twilio, Zendesk)
+            zapier_resp = self.zapier_client.trigger_multi_app_incident_response(
+                order_id=str(auth_id),
+                risk_score=float(command_data.get("risk_score", 9.5)),
+                amount=float(command_data.get("amount", 100.0)),
+                action_executed="void_authorization",
+                justification=reason,
+                refund_id=str(auth_id),
+                replay_url=command_data.get("replay_url"),
+            )
+
             return {
                 "status": "success",
                 "action": "void_authorization",
@@ -93,6 +106,7 @@ class ActuatorService:
                 "reason": reason,
                 "mitigation_executed": True,
                 "paypal_response": paypal_resp,
+                "zapier_mcp": zapier_resp,
             }
 
         # ----------------------------------------------------------------------
@@ -117,6 +131,17 @@ class ActuatorService:
                 note_to_payer=reason,
             )
 
+            # Trigger Zapier MCP multi-app enterprise incident response (Slack, Shopify, Twilio, Zendesk)
+            zapier_resp = self.zapier_client.trigger_multi_app_incident_response(
+                order_id=str(command_data.get("order_id", capture_id)),
+                risk_score=float(command_data.get("risk_score", 9.8)),
+                amount=float(amount or 149.0),
+                action_executed="refund_capture",
+                justification=reason,
+                refund_id=str(capture_id),
+                replay_url=command_data.get("replay_url"),
+            )
+
             return {
                 "status": "success",
                 "action": "refund_capture",
@@ -125,6 +150,7 @@ class ActuatorService:
                 "reason": reason,
                 "mitigation_executed": True,
                 "paypal_response": paypal_resp,
+                "zapier_mcp": zapier_resp,
             }
 
         # ----------------------------------------------------------------------

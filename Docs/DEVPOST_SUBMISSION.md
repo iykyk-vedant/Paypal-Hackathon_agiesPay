@@ -92,6 +92,12 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 - Dispute Evidence Harvester navigating courier tracking portals (FedEx, UPS, DHL) and capturing delivery photo proof.
 - 24fps session live view and full video replay embedded in the AG Grid Case File Drawer. Detailed in [`Docs/KERNEL_INTEGRATION.md`](Docs/KERNEL_INTEGRATION.md).
 
+### 10. Zapier MCP (Model Context Protocol — 9,000+ Apps)
+- Integration with Zapier MCP (`aegispay-system/zapier/client.py`) empowering the Actuator Agent to trigger multi-app enterprise incident responses upon PayPal payment mitigation.
+- Immediate incident card broadcast to Slack / Discord `#fraud-ops-alerts` with Gemini reasoning and refund receipts.
+- Warehouse fulfillment freeze in Shopify / ShipStation (`HOLD_FRAUD_STOP`) stopping physical dispatch.
+- Proactive buyer SMS security alert via Twilio and pre-filled dispute case creation in Zendesk. Detailed in [`Docs/ZAPIER_INTEGRATION.md`](Docs/ZAPIER_INTEGRATION.md).
+
 ---
 
 ## 🛠️ How We Built It
