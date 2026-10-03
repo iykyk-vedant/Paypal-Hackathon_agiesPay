@@ -76,6 +76,7 @@ aegispay-system/gemini-api-key-secret.yaml
 # Node & Package Managers
 node_modules/
 .env.*
+!.env.example
 *.env
 credentials.json
 *.pem
