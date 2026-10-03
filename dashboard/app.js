@@ -361,7 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* --------------------------------------------------------------------------
    Real-Time Backend SSE Stream & Connection
    -------------------------------------------------------------------------- */
-const BACKEND_URL = "http://localhost:8085";
+const BACKEND_URL = (window.location.port === "8088") ? "http://localhost:8085" : window.location.origin;
 let sseConnection = null;
 let isSentinelRunning = false;
 let sentinelInterval = null;
