@@ -39,10 +39,12 @@
         </div>
       </div>
       <div class="hackathon-badges">
-        <span class="badge paypal-badge"><i class="fa-brands fa-paypal"></i> PayPal Sandbox</span>
+        <span class="badge paypal-badge"><i class="fa-brands fa-paypal"></i> PayPal Orders v2</span>
         <span class="badge aggrid-badge"><i class="fa-solid fa-table-cells"></i> AG Grid Enterprise</span>
-        <span class="badge gemini-badge"><i class="fa-solid fa-brain"></i> Gemini 2.5 Flash</span>
-        <span class="badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #FBBF24;"><i class="fa-solid fa-calendar-days"></i> Bryntum Scheduler</span>
+        <span class="badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #FBBF24;"><i class="fa-solid fa-calendar-days"></i> Bryntum</span>
+        <span class="badge" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38BDF8;"><i class="fa-solid fa-cube"></i> Channel3</span>
+        <span class="badge" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.4); color: #FACC15;"><i class="fa-solid fa-database"></i> Elastic</span>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #C084FC;"><i class="fa-solid fa-window-maximize"></i> KERNEL (<span style="font-weight:700;">&lt;30ms</span>)</span>
       </div>
     </div>
 
@@ -323,8 +325,54 @@
               <code id="elasticEsqlQuery" class="esql-code">FROM aegispay_threat_intel | WHERE amount > 3000 AND location LIKE '%Romania%'</code>
             </div>
           </div>
-          <div class="elastic-footer-note">
-            <i class="fa-solid fa-database"></i> Grounded by Elastic Cloud Serverless Vector Search & ES|QL Analytics.
+        </div>
+
+        <!-- KERNEL Cloud Browser Agent Audit Section -->
+        <div id="kernelBrowserSection" class="kernel-card hidden">
+          <div class="kernel-header">
+            <div class="kernel-brand-badge">
+              <i class="fa-solid fa-window-maximize"></i> <span id="kernelClusterTag">KERNEL Cloud Browser (<span id="kernelColdStart">28ms</span>)</span>
+            </div>
+            <span id="kernelStealthBadge" class="kernel-stealth-pill danger">
+              <i class="fa-solid fa-user-secret"></i> Anti-Bot Bypassed • Headful Unikernel
+            </span>
+          </div>
+          <div class="kernel-content">
+            <div class="kernel-audit-title">
+              <i class="fa-solid fa-store"></i> <strong>Mystery Shopper DOM Storefront Audit</strong>
+            </div>
+            <p id="kernelAuditVerdict" class="kernel-desc">
+              AI agent spawned an on-demand cloud Chromium instance in <strong>28ms</strong>, navigated to the merchant storefront, and confirmed client-side DOM price manipulation.
+            </p>
+            <div class="kernel-audit-grid">
+              <div class="kernel-data-item">
+                <span class="kernel-lbl">Storefront URL:</span>
+                <span id="kernelStoreUrl" class="kernel-val font-mono">store.apple-authorized.com/checkout</span>
+              </div>
+              <div class="kernel-data-item">
+                <span class="kernel-lbl">Server DOM Price:</span>
+                <span id="kernelDomPrice" class="kernel-val font-bold text-emerald">$3,499.00</span>
+              </div>
+              <div class="kernel-data-item">
+                <span class="kernel-lbl">Client Payload:</span>
+                <span id="kernelPayloadPrice" class="kernel-val font-bold text-rose">$149.00</span>
+              </div>
+              <div class="kernel-data-item">
+                <span class="kernel-lbl">DOM Injection Verdict:</span>
+                <span id="kernelDomVerdict" class="kernel-val badge-tamper">CONFIRMED ATTACK</span>
+              </div>
+            </div>
+            <div class="kernel-action-bar">
+              <a id="kernelReplayLink" href="https://app.onkernel.com/sessions/sess_demo" target="_blank" class="kernel-replay-btn">
+                <i class="fa-solid fa-play"></i> Watch 24fps Agent Session Replay
+              </a>
+              <span class="kernel-carrier-proof" id="kernelCarrierProof">
+                <i class="fa-solid fa-truck-fast"></i> Dispute Evidence: Carrier Delivery Verified
+              </span>
+            </div>
+          </div>
+          <div class="kernel-footer-note">
+            <i class="fa-solid fa-globe"></i> Powered by KERNEL (kernel.sh) — Unikernel Chromium & Persistent Auth for AI Agents.
           </div>
         </div>
 

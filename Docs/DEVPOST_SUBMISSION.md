@@ -86,6 +86,12 @@ All transactions and A2A telemetry stream in real-time into an ultra-responsive 
 - Real-time ES|QL (Elasticsearch Query Language) piped telemetry queries to analyze velocity anomalies and aggregate merchant threat patterns.
 - Dedicated Elasticsearch Threat Intelligence inspection card in the Case File Drawer. Detailed in [`Docs/ELASTIC_INTEGRATION.md`](Docs/ELASTIC_INTEGRATION.md).
 
+### 9. KERNEL (Cloud Browser Infrastructure for AI Agents)
+- Direct integration with KERNEL.sh (`aegispay-system/kernel/client.py`) providing on-demand headful Chromium browser spin-up (<30ms cold starts via unikernels) and stealth anti-bot bypass.
+- Autonomous "Mystery Shopper" agent workflow verifying merchant storefront DOM price integrity against PayPal authorized checkout tokens.
+- Dispute Evidence Harvester navigating courier tracking portals (FedEx, UPS, DHL) and capturing delivery photo proof.
+- 24fps session live view and full video replay embedded in the AG Grid Case File Drawer. Detailed in [`Docs/KERNEL_INTEGRATION.md`](Docs/KERNEL_INTEGRATION.md).
+
 ---
 
 ## 🛠️ How We Built It

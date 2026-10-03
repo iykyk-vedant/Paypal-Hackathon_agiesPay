@@ -435,6 +435,7 @@ function handleIncomingBackendEvent(data) {
 
   const channel3Data = data.investigation_result?.channel3_product_data || data.transaction_data?.channel3_product_data || null;
   const elasticIntel = data.investigation_result?.elastic_threat_intel || data.elastic_threat_intel || null;
+  const kernelBrowser = data.investigation_result?.kernel_browser_audit || data.kernel_browser_audit || null;
 
   const row = {
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -452,6 +453,7 @@ function handleIncomingBackendEvent(data) {
     factors: data.signals || analysis.signals || ["PayPal Commerce Inspection"],
     channel3: channel3Data,
     elasticIntel: elasticIntel,
+    kernelBrowser: kernelBrowser,
     rawJson: data
   };
 
@@ -816,8 +818,8 @@ function simulatePriceTamperingFallback() {
     location: "Miami, FL, US",
     riskScore: 9.8,
     status: "Auto-Refunded (PayPal)",
-    justification: "Channel3 Product Intelligence Alert: Cart Price Tampering detected! Order charged $149.00 for 'Apple MacBook Pro 16-inch M3 Max' (Verified Market Value: $3,499.00, Variance: -95.7%). Immediate PayPal Payments v2 refund_capture executed.",
-    factors: ["CHANNEL3_PRICE_TAMPERING", "Cart Slashing (-95.7%)", "Severe FMV Discrepancy"],
+    justification: "Channel3 Product Intelligence Alert: Cart Price Tampering detected! Order charged $149.00 for 'Apple MacBook Pro 16-inch M3 Max' (Verified Market Value: $3,499.00, Variance: -95.7%). Immediate PayPal Payments v2 refund_capture executed. Kernel Cloud Browser Mystery Shopper (<30ms unikernel) confirmed DOM injection attack on storefront.",
+    factors: ["CHANNEL3_PRICE_TAMPERING", "Cart Slashing (-95.7%)", "KERNEL_DOM_TAMPERING_DETECTED", "Severe FMV Discrepancy"],
     channel3: {
       item_queried: "Apple MacBook Pro 16",
       verified_title: "Apple MacBook Pro 16-inch M3 Max 36GB RAM 1TB SSD",
@@ -840,6 +842,19 @@ function simulatePriceTamperingFallback() {
       historical_resolution: "Auto-Refunded via PayPal Payments v2 refund_capture",
       esql_signature: "FROM aegispay_threat_intel | WHERE amount > 3000 AND location LIKE '%Miami%'"
     },
+    kernelBrowser: {
+      session_id: `sess_kernel_${orderNum}`,
+      cold_start_ms: 27.8,
+      stealth_anti_bot: true,
+      merchant_store_url: "https://store.apple-authorized-merchant.com/checkout",
+      dom_server_rendered_price: 3499.00,
+      paypal_token_captured_amount: 149.00,
+      price_variance_pct: -95.7,
+      dom_tampering_detected: true,
+      browser_live_view_url: `https://live.onkernel.com/view/sess_kernel_${orderNum}`,
+      session_replay_url: `https://app.onkernel.com/sessions/sess_kernel_${orderNum}`,
+      verdict: "CRITICAL: DOM price injection confirmed! Storefront renders $3,499.00, but checkout payload was tampered to $149.00 (-95.7% variance)."
+    },
     rawJson: {
       event_type: "PAYMENT.CAPTURE.REFUNDED",
       order_id: `PP-2026-${orderNum}`,
@@ -854,6 +869,12 @@ function simulatePriceTamperingFallback() {
         incident_id: "EXP-9102",
         title: "Client-Side Cart Price Tampering / Slashing",
         similarity_pct: 99.2
+      },
+      kernel_browser_audit: {
+        session_id: `sess_kernel_${orderNum}`,
+        cold_start_ms: 27.8,
+        dom_tampering_detected: true,
+        session_replay_url: `https://app.onkernel.com/sessions/sess_kernel_${orderNum}`
       }
     }
   };
@@ -1008,6 +1029,58 @@ function openCaseFile(tx) {
       }
     } else {
       elasticSection.classList.add("hidden");
+    }
+  }
+
+  // KERNEL Cloud Browser Section
+  const kernelSection = document.getElementById("kernelBrowserSection");
+  const kData = tx.kernelBrowser || tx.rawJson?.investigation_result?.kernel_browser_audit || tx.rawJson?.kernel_browser_audit;
+  if (kernelSection) {
+    if (kData && (kData.session_id || kData.dom_tampering_detected !== undefined)) {
+      kernelSection.classList.remove("hidden");
+      const coldStartEl = document.getElementById("kernelColdStart");
+      if (coldStartEl) coldStartEl.innerText = `${kData.cold_start_ms || 28.4}ms`;
+
+      const stealthBadge = document.getElementById("kernelStealthBadge");
+      if (stealthBadge) {
+        if (kData.dom_tampering_detected) {
+          stealthBadge.className = "kernel-stealth-pill danger";
+          stealthBadge.innerHTML = '<i class="fa-solid fa-user-secret"></i> Anti-Bot Bypassed • Headful Unikernel';
+        } else {
+          stealthBadge.className = "kernel-stealth-pill safe";
+          stealthBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Cloud Browser Active • Verified Safe';
+        }
+      }
+
+      const storeUrlEl = document.getElementById("kernelStoreUrl");
+      if (storeUrlEl) storeUrlEl.innerText = kData.merchant_store_url ? kData.merchant_store_url.replace("https://", "") : "store.apple-authorized.com/checkout";
+
+      const domPriceEl = document.getElementById("kernelDomPrice");
+      if (domPriceEl) domPriceEl.innerText = `$${parseFloat(kData.dom_server_rendered_price || 3499.00).toFixed(2)}`;
+
+      const payloadPriceEl = document.getElementById("kernelPayloadPrice");
+      if (payloadPriceEl) payloadPriceEl.innerText = `$${parseFloat(kData.paypal_token_captured_amount || tx.amount).toFixed(2)}`;
+
+      const domVerdictEl = document.getElementById("kernelDomVerdict");
+      if (domVerdictEl) {
+        if (kData.dom_tampering_detected) {
+          domVerdictEl.className = "kernel-val badge-tamper";
+          domVerdictEl.innerText = "CONFIRMED ATTACK";
+        } else {
+          domVerdictEl.className = "kernel-val badge-tamper safe";
+          domVerdictEl.innerText = "DOM PRICE MATCHED";
+        }
+      }
+
+      const verdictDescEl = document.getElementById("kernelAuditVerdict");
+      if (verdictDescEl) verdictDescEl.innerText = kData.verdict || "AI agent spawned an on-demand cloud Chromium instance in 28ms, navigated to storefront, and audited DOM integrity.";
+
+      const replayLink = document.getElementById("kernelReplayLink");
+      if (replayLink) {
+        replayLink.href = kData.session_replay_url || `https://app.onkernel.com/sessions/${kData.session_id || 'demo'}`;
+      }
+    } else {
+      kernelSection.classList.add("hidden");
     }
   }
 

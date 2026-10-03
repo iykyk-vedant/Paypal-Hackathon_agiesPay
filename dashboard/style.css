@@ -1018,6 +1018,164 @@ h1, h2, h3, h4 {
   padding-top: 8px;
 }
 
+/* KERNEL Cloud Browser & Mystery Shopper Card */
+.kernel-card {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(2, 6, 23, 0.95) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.kernel-card.hidden {
+  display: none !important;
+}
+
+.kernel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kernel-brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #C084FC;
+}
+
+.kernel-stealth-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  color: #FDA4AF;
+}
+
+.kernel-stealth-pill.safe {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6EE7B7;
+}
+
+.kernel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kernel-audit-title {
+  font-size: 12.5px;
+  color: #F8FAFC;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kernel-desc {
+  font-size: 11px;
+  color: #94A3B8;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.kernel-audit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: #020617;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.kernel-data-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kernel-lbl {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.kernel-val {
+  font-size: 11px;
+  color: #E2E8F0;
+}
+
+.badge-tamper {
+  color: #F43F5E;
+  font-weight: 700;
+}
+
+.badge-tamper.safe {
+  color: #10B981;
+}
+
+.kernel-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.kernel-replay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #9333EA 0%, #7E22CE 100%);
+  color: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+}
+
+.kernel-replay-btn:hover {
+  background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.45);
+}
+
+.kernel-carrier-proof {
+  font-size: 10px;
+  color: #38BDF8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kernel-footer-note {
+  font-size: 10px;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
 /* Investigation Breakdown */
 .investigation-breakdown {
   background: #090E1A;

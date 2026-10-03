@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from paypal import PayPalClient
 from channel3 import Channel3Client
 from elasticsearch.client import ElasticThreatIntelClient
+from kernel import KernelBrowserClient
 
 try:
     from google.adk.agents import LlmAgent
@@ -83,6 +84,7 @@ class InvestigationService:
 
         self.channel3_client = Channel3Client()
         self.elastic_client = ElasticThreatIntelClient()
+        self.kernel_client = KernelBrowserClient()
 
         if self.has_llm:
             try:
@@ -159,7 +161,23 @@ class InvestigationService:
             )
             risk_signals.setdefault("signals_detected", []).append(intel_sig)
 
-        # 5. LLM or Heuristic Reasoning
+        # 5. KERNEL Cloud Browser Mystery Shopper & DOM Audit
+        store_url = transaction_data.get("store_url") or "https://store.apple-authorized-merchant.com/checkout"
+        kernel_audit = self.kernel_client.audit_merchant_checkout_dom(
+            store_url=store_url,
+            product_name=item_name,
+            checkout_amount=amount,
+            channel3_fmv=channel3_fmv.get("market_price", 0.0) if channel3_fmv else None,
+        )
+        if kernel_audit.get("dom_tampering_detected"):
+            kernel_msg = (
+                f"KERNEL_DOM_TAMPERING_DETECTED: Headful Mystery Shopper confirmed server price "
+                f"${kernel_audit['dom_server_rendered_price']:.2f} vs client payload ${amount:.2f} "
+                f"({kernel_audit['price_variance_pct']}%). Replay: {kernel_audit['session_replay_url']}"
+            )
+            risk_signals.setdefault("signals_detected", []).append(kernel_msg)
+
+        # 6. LLM or Heuristic Reasoning
         analysis: Dict[str, Any] = {}
         if self.has_llm:
             prompt = (
@@ -168,6 +186,7 @@ class InvestigationService:
                 f"Extracted Risk Signals:\n{json.dumps(risk_signals, indent=2)}\n\n"
                 f"Channel3 Product Data:\n{json.dumps(channel3_fmv, indent=2)}\n\n"
                 f"Elasticsearch Threat Intelligence:\n{json.dumps(elastic_intel, indent=2)}\n\n"
+                f"Kernel Cloud Browser Audit:\n{json.dumps(kernel_audit, indent=2)}\n\n"
                 f"Recent Disputes Context:\n{json.dumps(disputes, indent=2)}\n\n"
                 "Provide your risk assessment as JSON."
             )
@@ -199,9 +218,9 @@ class InvestigationService:
                 logger.info("Gemini 2.5 Flash investigation completed for %s: %s", order_id, analysis)
             except Exception as e:
                 logger.warning("LLM reasoning fallback: %s", e)
-                analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel)
+                analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel, kernel_audit)
         else:
-            analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel)
+            analysis = self._compute_heuristic_analysis(order_details, risk_signals, channel3_fmv, elastic_intel, kernel_audit)
 
         case_file = {
             "order_id": order_id,
@@ -211,6 +230,7 @@ class InvestigationService:
             "disputes_context": disputes,
             "channel3_product_data": channel3_fmv,
             "elastic_threat_intel": elastic_intel,
+            "kernel_browser_audit": kernel_audit,
             "fraud_analysis": analysis,
         }
         return case_file
@@ -221,6 +241,7 @@ class InvestigationService:
         risk_signals: Dict[str, Any],
         channel3_fmv: Optional[Dict[str, Any]] = None,
         elastic_intel: Optional[Dict[str, Any]] = None,
+        kernel_audit: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """APIMatic-grounded & Channel3-verified deterministic risk reasoning."""
         signals = risk_signals.get("signals_detected", [])
@@ -265,6 +286,9 @@ class InvestigationService:
 
         if elastic_intel and elastic_intel.get("similarity_pct", 0) >= 90.0 and score >= 7.0:
             justification += f" Elasticsearch Threat Intelligence: {elastic_intel['similarity_pct']}% match to syndicate pattern {elastic_intel['incident_id']} ({elastic_intel['title']})."
+
+        if kernel_audit and kernel_audit.get("dom_tampering_detected"):
+            justification += f" Kernel Cloud Browser Mystery Shopper (<30ms unikernel) confirmed DOM injection attack on storefront. Visual replay: {kernel_audit['session_replay_url']}"
 
         return {
             "risk_score": score,

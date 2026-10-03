@@ -21,6 +21,7 @@ import httpx
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from paypal import PayPalClient
 from elasticsearch.client import ElasticThreatIntelClient
+from kernel import KernelBrowserClient
 
 try:
     from a2a.types import (
@@ -79,6 +80,7 @@ class OrchestratorService:
         self.investigation_url = INVESTIGATION_URL
         self.actuator_url = ACTUATOR_URL
         self.elastic_client = ElasticThreatIntelClient()
+        self.kernel_client = KernelBrowserClient()
         self._http_client = httpx.AsyncClient(timeout=25.0)
 
     async def broadcast_event(self, event_data: Dict[str, Any]):
@@ -245,6 +247,44 @@ async def execute_esql_endpoint(request_body: Dict[str, Any]) -> Dict[str, Any]:
         orchestrator_service = OrchestratorService()
     query_str = request_body.get("query", "FROM aegispay_threat_intel | LIMIT 5")
     return orchestrator_service.elastic_client.run_esql(query_str)
+
+
+@app.get("/api/kernel/health")
+async def kernel_health_endpoint() -> Dict[str, Any]:
+    """Returns KERNEL cloud browser infrastructure health status and capabilities."""
+    global orchestrator_service
+    if orchestrator_service is None:
+        orchestrator_service = OrchestratorService()
+    return orchestrator_service.kernel_client.health_check()
+
+
+@app.post("/api/kernel/audit-checkout")
+async def kernel_audit_checkout_endpoint(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Triggers an autonomous 'Mystery Shopper' DOM storefront audit via Kernel cloud browser (<30ms spinup)."""
+    global orchestrator_service
+    if orchestrator_service is None:
+        orchestrator_service = OrchestratorService()
+    store_url = payload.get("store_url", "https://store.apple-authorized-merchant.com/checkout")
+    product_name = payload.get("product_name", "Apple MacBook Pro 16")
+    checkout_amount = float(payload.get("checkout_amount", 149.00))
+    channel3_fmv = float(payload.get("channel3_fmv", 3499.00))
+    return orchestrator_service.kernel_client.audit_merchant_checkout_dom(
+        store_url=store_url,
+        product_name=product_name,
+        checkout_amount=checkout_amount,
+        channel3_fmv=channel3_fmv
+    )
+
+
+@app.post("/api/kernel/verify-tracking")
+async def kernel_verify_tracking_endpoint(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Autonomous dispute carrier evidence harvester via Kernel stealth browser."""
+    global orchestrator_service
+    if orchestrator_service is None:
+        orchestrator_service = OrchestratorService()
+    carrier = payload.get("carrier", "FedEx")
+    tracking_number = payload.get("tracking_number", "794829104928")
+    return orchestrator_service.kernel_client.verify_carrier_dispute_evidence(carrier, tracking_number)
 
 
 @app.post("/process-transaction")

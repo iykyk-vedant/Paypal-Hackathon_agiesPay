@@ -61,11 +61,23 @@ To become the premier autonomous multi-agent trust layer for PayPal merchants, t
 │ Best Use of AG Grid    │ $5,000 Cash │ Real-time interactive Merchant Ops   │
 │ (1st Place)            │             │ Dashboard with Master-Detail & Action│
 ├────────────────────────┼─────────────┼──────────────────────────────────────┤
-│ Best Use of Render     │ $1,000      │ Hosted live cloud demo & agent       │
+│ Best Use of Render     │ $5,000      │ Hosted live cloud demo & agent       │
 │ (1st Place)            │ Credits     │ background workers on Render         │
 ├────────────────────────┼─────────────┼──────────────────────────────────────┤
 │ Best Use of APIMatic   │ $1,000 Cash │ Dynamic OpenAPI context injection    │
 │                        │ + 6mo Sub   │ for agent tool execution             │
+├────────────────────────┼─────────────┼──────────────────────────────────────┤
+│ Best Use of Bryntum    │ Sponsor     │ Dispute Triage & Deadline Horizon    │
+│                        │ Award       │ interactive resource scheduler       │
+├────────────────────────┼─────────────┼──────────────────────────────────────┤
+│ Best Use of Channel3   │ $2,500 Cash │ Fair Market Value verification for   │
+│                        │             │ DOM cart price tampering defense     │
+├────────────────────────┼─────────────┼──────────────────────────────────────┤
+│ Best Use of Elastic    │ Sponsor     │ Elastic Cloud 9.6.0 Serverless RAG   │
+│                        │ Award       │ vector memory & ES|QL telemetry      │
+├────────────────────────┼─────────────┼──────────────────────────────────────┤
+│ Best Use of KERNEL     │ Sponsor     │ <30ms cloud browser infrastructure   │
+│                        │ Award       │ Mystery Shopper DOM audit & 24fps vid│
 └────────────────────────┴─────────────┴──────────────────────────────────────┘
 ```
 
