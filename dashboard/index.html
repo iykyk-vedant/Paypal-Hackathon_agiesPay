@@ -45,6 +45,7 @@
         <span class="badge" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38BDF8;"><i class="fa-solid fa-cube"></i> Channel3</span>
         <span class="badge" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.4); color: #FACC15;"><i class="fa-solid fa-database"></i> Elastic</span>
         <span class="badge" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #C084FC;"><i class="fa-solid fa-window-maximize"></i> KERNEL (<span style="font-weight:700;">&lt;30ms</span>)</span>
+        <span class="badge" style="background: rgba(255, 74, 0, 0.15); border: 1px solid rgba(255, 74, 0, 0.4); color: #FF4A00;"><i class="fa-solid fa-bolt-lightning"></i> Zapier MCP</span>
       </div>
     </div>
 
@@ -373,6 +374,52 @@
           </div>
           <div class="kernel-footer-note">
             <i class="fa-solid fa-globe"></i> Powered by KERNEL (kernel.sh) — Unikernel Chromium & Persistent Auth for AI Agents.
+          </div>
+        </div>
+
+        <!-- Zapier MCP Enterprise Incident Response Section -->
+        <div id="zapierMcpSection" class="zapier-card hidden">
+          <div class="zapier-header">
+            <div class="zapier-brand-badge">
+              <i class="fa-solid fa-bolt-lightning"></i> <span id="zapierBrandTag">Zapier MCP Enterprise Gateway (9,000+ Apps)</span>
+            </div>
+            <span id="zapierStatusBadge" class="zapier-status-pill">
+              <i class="fa-solid fa-circle-check"></i> <span id="zapierActionsCount">4 Actions Triggered</span>
+            </span>
+          </div>
+          <div class="zapier-content">
+            <div class="zapier-intro">
+              <i class="fa-solid fa-diagram-project"></i> <strong>Autonomous Multi-App Mitigation Swarm:</strong>
+            </div>
+            <div class="zapier-actions-grid">
+              <div class="zapier-action-item">
+                <div class="zapier-app-title"><i class="fa-brands fa-slack text-slack"></i> Slack (#fraud-ops-alerts)</div>
+                <div class="zapier-app-desc" id="zapierSlackDesc">Paged fraud ops with Gemini case file & PayPal refund receipt.</div>
+                <span class="zapier-badge-success">DELIVERED</span>
+              </div>
+              <div class="zapier-action-item">
+                <div class="zapier-app-title"><i class="fa-brands fa-shopify text-shopify"></i> Shopify / ShipStation</div>
+                <div class="zapier-app-desc" id="zapierWarehouseDesc">Fulfillment frozen: Tagged 'HOLD_FRAUD_STOP' to prevent dispatch.</div>
+                <span class="zapier-badge-danger">SHIPMENT FROZEN</span>
+              </div>
+              <div class="zapier-action-item">
+                <div class="zapier-app-title"><i class="fa-solid fa-comment-sms text-twilio"></i> Twilio SMS Gateway</div>
+                <div class="zapier-app-desc" id="zapierTwilioDesc">Dispatched unauthorized transaction alert to legitimate buyer.</div>
+                <span class="zapier-badge-info">SMS SENT</span>
+              </div>
+              <div class="zapier-action-item">
+                <div class="zapier-app-title"><i class="fa-solid fa-ticket text-zendesk"></i> Zendesk Support</div>
+                <div class="zapier-app-desc" id="zapierZendeskDesc">Opened urgent dispute case with evidence package (<span id="zapierTicketNum">#ZD-8921</span>).</div>
+                <span class="zapier-badge-warning">CASE OPENED</span>
+              </div>
+            </div>
+            <div class="zapier-payload-box">
+              <div class="zapier-bar-title"><i class="fa-solid fa-code"></i> Model Context Protocol (MCP v1.0) Execution Receipt:</div>
+              <code id="zapierMcpSummary" class="zapier-code">zapier.slack.broadcast_security_incident() • zapier.shopify.hold_warehouse_fulfillment()</code>
+            </div>
+          </div>
+          <div class="zapier-footer-note">
+            <i class="fa-solid fa-network-wired"></i> Model Context Protocol (MCP) Standard — Instant multi-app enforcement with zero friction.
           </div>
         </div>
 

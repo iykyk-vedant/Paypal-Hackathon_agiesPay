@@ -436,6 +436,7 @@ function handleIncomingBackendEvent(data) {
   const channel3Data = data.investigation_result?.channel3_product_data || data.transaction_data?.channel3_product_data || null;
   const elasticIntel = data.investigation_result?.elastic_threat_intel || data.elastic_threat_intel || null;
   const kernelBrowser = data.investigation_result?.kernel_browser_audit || data.kernel_browser_audit || null;
+  const zapierMcp = data.actuator_result?.zapier_mcp || data.zapier_mcp || null;
 
   const row = {
     id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -454,6 +455,7 @@ function handleIncomingBackendEvent(data) {
     channel3: channel3Data,
     elasticIntel: elasticIntel,
     kernelBrowser: kernelBrowser,
+    zapierMcp: zapierMcp,
     rawJson: data
   };
 
@@ -875,7 +877,29 @@ function simulatePriceTamperingFallback() {
         cold_start_ms: 27.8,
         dom_tampering_detected: true,
         session_replay_url: `https://app.onkernel.com/sessions/sess_kernel_${orderNum}`
+      },
+      zapier_mcp: {
+        total_actions_executed: 4,
+        orchestration_latency_ms: 48.2,
+        actions: {
+          slack: { channel: "#fraud-ops-alerts", status: "delivered" },
+          warehouse_hold: { fulfillment_status: "HOLD_FRAUD_STOP" },
+          buyer_sms: { recipient: "Cardholder (+1-***-***-8821)" },
+          zendesk: { ticket_id: `ZD-${1000 + (orderNum % 9000)}` }
+        },
+        summary: "Zapier MCP executed 4 enterprise actions: Paged Slack #fraud-ops-alerts, froze Shopify warehouse fulfillment, alerted buyer via Twilio SMS, and opened Zendesk case."
       }
+    },
+    zapierMcp: {
+      total_actions_executed: 4,
+      orchestration_latency_ms: 48.2,
+      actions: {
+        slack: { channel: "#fraud-ops-alerts", status: "delivered" },
+        warehouse_hold: { fulfillment_status: "HOLD_FRAUD_STOP" },
+        buyer_sms: { recipient: "Cardholder (+1-***-***-8821)" },
+        zendesk: { ticket_id: `ZD-${1000 + (orderNum % 9000)}` }
+      },
+      summary: "Zapier MCP executed 4 enterprise actions: Paged Slack #fraud-ops-alerts, froze Shopify warehouse fulfillment, alerted buyer via Twilio SMS, and opened Zendesk case."
     }
   };
 
@@ -1081,6 +1105,42 @@ function openCaseFile(tx) {
       }
     } else {
       kernelSection.classList.add("hidden");
+    }
+  }
+
+  // Zapier MCP Section
+  const zapierSection = document.getElementById("zapierMcpSection");
+  const zData = tx.zapierMcp || tx.rawJson?.actuator_result?.zapier_mcp || tx.rawJson?.zapier_mcp;
+  if (zapierSection) {
+    if (zData && (zData.total_actions_executed || zData.actions)) {
+      zapierSection.classList.remove("hidden");
+      const countEl = document.getElementById("zapierActionsCount");
+      if (countEl) countEl.innerText = `${zData.total_actions_executed || 4} Actions Triggered`;
+
+      const actions = zData.actions || {};
+      if (actions.slack && actions.slack.channel) {
+        const slackEl = document.getElementById("zapierSlackDesc");
+        if (slackEl) slackEl.innerText = `Paged ${actions.slack.channel} with Gemini case file & PayPal refund receipt.`;
+      }
+      if (actions.warehouse_hold) {
+        const whEl = document.getElementById("zapierWarehouseDesc");
+        if (whEl) whEl.innerText = `Fulfillment frozen: Tagged '${actions.warehouse_hold.fulfillment_status || 'HOLD_FRAUD_STOP'}' to prevent dispatch.`;
+      }
+      if (actions.buyer_sms) {
+        const twilioEl = document.getElementById("zapierTwilioDesc");
+        if (twilioEl) twilioEl.innerText = `Dispatched unauthorized transaction alert to ${actions.buyer_sms.recipient || 'buyer'}.`;
+      }
+      if (actions.zendesk) {
+        const ticketNumEl = document.getElementById("zapierTicketNum");
+        if (ticketNumEl) ticketNumEl.innerText = `#${actions.zendesk.ticket_id || 'ZD-8921'}`;
+      }
+
+      const summaryEl = document.getElementById("zapierMcpSummary");
+      if (summaryEl) {
+        summaryEl.innerText = zData.summary || "zapier.slack.broadcast_security_incident() • zapier.shopify.hold_warehouse_fulfillment() • zapier.twilio.send_sms()";
+      }
+    } else {
+      zapierSection.classList.add("hidden");
     }
   }
 
