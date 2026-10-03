@@ -1,0 +1,3 @@
+﻿"Timestamp","Order ID","Customer","Amount","Category","Risk Score","Status"
+"12:48:10","PP-2026-9812","Alexander Wright","4850","Digital Gift Cards","9.1","Auto-Refunded (PayPal)"
+"12:31:14","PP-2026-9808","CyberBot_Agent_99","3200","Hardware Server Parts","9.6","Account Locked"

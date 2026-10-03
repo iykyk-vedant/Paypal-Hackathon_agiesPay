@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AegisPay — Autonomous Multi-Agent Fraud Defense for PayPal</title>
+  <title>AegisPay · Fraud Operations</title>
   
-  <!-- Google Fonts: Outfit & Inter -->
+  <!-- Workspace typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -19,227 +19,77 @@
   
   <!-- Bryntum Scheduler CSS (Structural + Stockholm Dark Theme) -->
   <link rel="stylesheet" href="bryntum/scheduler.css">
-  <link rel="stylesheet" href="bryntum/stockholm-dark.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.7/svalbard-light.css">
   
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Top Navigation Bar -->
-  <header class="app-header">
-    <div class="header-left">
-      <div class="brand-logo">
-        <div class="logo-shield">
-          <i class="fa-solid fa-shield-halved"></i>
-        </div>
-        <div class="brand-text">
-          <h1>Aegis<span>Pay</span></h1>
-          <span class="brand-subtitle">Autonomous Multi-Agent Fraud Shield</span>
-        </div>
-      </div>
-      <div class="subsystem-telemetry-bar" data-testid="subsystem-telemetry-bar">
-        <span class="sys-badge paypal" title="Active Gateway" data-testid="telemetry-paypal"><span class="dot green"></span> PayPal Orders v2</span>
-        <span class="sys-badge aggrid" title="Real-Time Ingestion Engine" data-testid="telemetry-aggrid"><span class="dot green"></span> AG Grid v32 Enterprise</span>
-        <span class="sys-badge bryntum" title="Dispute SLA &amp; Response Horizon" data-testid="telemetry-bryntum"><span class="dot green"></span> Bryntum SLA Horizon</span>
-        <span class="sys-badge channel3" title="Product Catalog Discrepancy Engine" data-testid="telemetry-channel3"><span class="dot blue"></span> Channel3 FMV Engine</span>
-        <span class="sys-badge elastic" title="ES|QL Vector Threat Memory" data-testid="telemetry-elastic"><span class="dot yellow"></span> Elastic Serverless ES|QL</span>
-        <span class="sys-badge kernel" title="Unikernel DOM Audit &bull; P99 &lt; 30ms" data-testid="telemetry-kernel"><span class="dot purple"></span> KERNEL Cloud Browser (&lt;30ms)</span>
-        <span class="sys-badge zapier" title="Multi-App Autonomous Actuation" data-testid="telemetry-zapier"><span class="dot orange"></span> Zapier MCP v1.0</span>
-      </div>
-    </div>
+  <aside class="sidebar" id="workspaceSidebar" data-testid="workspace-sidebar">
+    <a class="brand-logo" href="#overview" data-testid="brand-home-link" aria-label="AegisPay overview"><span class="logo-shield"><i class="fa-solid fa-shield-halved"></i></span><span class="brand-wordmark">AegisPay<span class="brand-period">.</span></span></a>
+    <div class="workspace-label"><span class="paypal-mark"><i class="fa-brands fa-paypal"></i></span><div><strong>PayPal Commerce</strong><span>Fraud operations</span></div></div>
+    <span class="nav-caption">WORKSPACE</span>
+    <nav class="workspace-nav" aria-label="Main navigation">
+      <a href="#overview" class="nav-link active" data-route="overview" data-testid="nav-overview"><i class="fa-solid fa-table-columns"></i><span>Overview</span></a>
+      <a href="#disputes" class="nav-link" data-route="disputes" data-testid="nav-disputes"><i class="fa-regular fa-folder-open"></i><span>Disputes</span></a>
+      <a href="#activity" class="nav-link" data-route="activity" data-testid="nav-activity"><i class="fa-solid fa-list-check"></i><span>Activity log</span></a>
+    </nav>
+    <span class="nav-caption tools-caption">TOOLS</span>
+    <nav class="workspace-nav" aria-label="Workspace tools">
+      <a href="#simulations" class="nav-link" data-route="simulations" data-testid="nav-simulations"><i class="fa-solid fa-flask"></i><span>Simulations</span></a>
+      <a href="#systems" class="nav-link" data-route="systems" data-testid="nav-systems"><i class="fa-solid fa-plug"></i><span>System status</span></a>
+    </nav>
+    <div class="sidebar-bottom"><div class="environment-label" data-testid="workspace-environment"><span class="environment-dot"></span> Sandbox workspace</div><div class="workspace-profile"><span class="profile-avatar">FO</span><div><strong>Fraud operations</strong><span>PayPal Commerce</span></div></div></div>
+  </aside>
+  <div class="workspace-shell">
+    <header class="app-header">
+      <div class="header-left"><button class="icon-button mobile-menu" id="mobileMenuBtn" data-testid="mobile-menu-button" aria-label="Toggle navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button><span class="breadcrumb">Workspace <i class="fa-solid fa-chevron-right"></i> <strong id="routeBreadcrumb" data-testid="route-breadcrumb">Overview</strong></span></div>
+      <div class="header-right"><span class="environment-tag" data-testid="sample-data-label">Sample data + sandbox</span><div class="live-status-pill" id="liveStatusPill" data-testid="live-status-pill"><span class="status-dot"></span><span class="status-label">Connecting</span><span class="live-latency-badge">Decision <span id="sseLatencyVal">—</span>ms</span></div></div>
+    </header>
+    <main class="dashboard-container" id="mainContent">
+      <section class="page-heading"><div><div class="page-eyebrow">PAYPAL COMMERCE</div><h1 id="pageTitle" data-testid="page-title">Transaction overview</h1><p id="pageSubtitle" data-testid="page-subtitle">Monitor payments. Review risk. Stay in control.</p></div><div class="heading-actions"><span class="session-tag" data-testid="session-scope"><i class="fa-regular fa-clock"></i> Current session</span><button id="openSimulateModalBtn" class="btn btn-primary" data-testid="open-simulation-button"><i class="fa-solid fa-plus"></i> New simulation</button></div></section>
 
-    <div class="header-right">
-      <div class="live-status-pill" id="liveStatusPill" data-testid="live-status-pill">
-        <span class="status-dot pulsing heartbeat"></span>
-        <span class="status-label">Autonomous Agents Online (4/4)</span>
-        <span class="live-latency-badge">SSE Live &bull; <span id="sseLatencyVal">—</span>ms latency</span>
-      </div>
-      <button id="openSimulateModalBtn" class="btn btn-primary">
-        <i class="fa-solid fa-bolt"></i> New Simulation
-      </button>
-    </div>
-  </header>
+      <section class="kpi-grid" id="overviewMetrics" aria-label="Session metrics">
+        <div class="kpi-card"><div class="metric-label">Monitored volume <i class="fa-solid fa-arrow-right-arrow-left"></i></div><div id="totalVolume" class="kpi-value" data-testid="total-volume">$0.00</div><span class="kpi-subtext">Total payment volume · USD</span></div>
+        <div class="kpi-card"><div class="metric-label">Transactions evaluated <i class="fa-regular fa-credit-card"></i></div><div id="totalTransactions" class="kpi-value" data-testid="total-transactions">0</div><span class="kpi-subtext"><span class="tiny-dot"></span> Current monitoring session</span></div>
+        <div class="kpi-card"><div class="metric-label">Risk intercepted <i class="fa-solid fa-shield-halved"></i></div><div id="fraudIntercepted" class="kpi-value" data-testid="fraud-intercepted">$0.00</div><span id="fraudAttacksCount" class="kpi-delta" data-testid="fraud-attacks-count">0 high-risk transactions</span></div>
+        <div class="kpi-card"><div class="metric-label">Decision latency <span class="metric-tag">P90</span></div><div id="avgLatency" class="kpi-value" data-testid="decision-latency">—</div><span id="latencyTrendLabel" class="kpi-subtext" data-testid="latency-trend">Awaiting first decision</span></div>
+      </section>
 
-  <!-- Main Dashboard Container -->
-  <main class="dashboard-container">
-    
-    <!-- KPI Summary Metrics Row -->
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon-wrapper blue">
-          <i class="fa-solid fa-money-bill-wave"></i>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-title">Total Monitored Volume</span>
-          <h2 id="totalVolume" class="kpi-value">$0.00</h2>
-          <span class="kpi-subtext">Live PayPal session total</span>
-        </div>
-      </div>
+      <div class="view-switcher-bar" id="monitoringTabs" role="tablist" aria-label="Monitoring views"><button id="viewGridTabBtn" class="view-tab-btn active" data-testid="transactions-tab" role="tab" aria-selected="true">Transactions <span id="transactionTabCount" data-testid="transaction-tab-count">0</span></button><button id="viewSchedulerTabBtn" class="view-tab-btn" data-testid="disputes-tab" role="tab" aria-selected="false">Dispute horizon</button><span class="view-context">SESSION ACTIVITY</span></div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon-wrapper purple">
-          <i class="fa-solid fa-chart-line"></i>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-title">Transactions Evaluated</span>
-          <h2 id="totalTransactions" class="kpi-value">0</h2>
-          <span class="kpi-subtext">Real-time A2A Stream</span>
-        </div>
-      </div>
+      <section id="gridTableSection" class="grid-section" data-testid="transaction-section">
+        <div class="grid-card-header"><div class="grid-header-title"><h2>All transactions</h2><span id="visibleTransactionCount" class="grid-subtitle" data-testid="visible-transaction-count">6 transactions</span></div><div class="grid-controls"><div class="search-input-wrapper"><i class="fa-solid fa-magnifying-glass search-icon"></i><input type="search" id="quickFilterInput" data-testid="transaction-search" aria-label="Search transactions" placeholder="Search transactions…" autocomplete="off"><button id="quickFilterClearBtn" class="search-clear-btn hidden" data-testid="quick-filter-clear-btn" aria-label="Clear search" title="Clear search"><i class="fa-solid fa-xmark"></i></button></div><button id="exportCsvBtn" class="btn btn-secondary" data-testid="export-csv-button" title="Export filtered transactions"><i class="fa-solid fa-arrow-up-from-bracket"></i> Export</button></div></div>
+        <div class="filter-toolbar"><div class="risk-filter-segment-bar" data-testid="risk-filter-bar" aria-label="Risk level"><button class="risk-seg-btn active" id="riskFilterAllBtn" data-filter="all" data-testid="risk-filter-all-btn" aria-pressed="true">All <span data-risk-count="all" data-testid="risk-count-all">0</span></button><button class="risk-seg-btn critical" id="riskFilterCriticalBtn" data-filter="critical" data-testid="risk-filter-critical-btn" aria-pressed="false"><span class="filter-dot critical"></span>High risk <span data-risk-count="critical" data-testid="risk-count-critical">0</span></button><button class="risk-seg-btn review" id="riskFilterReviewBtn" data-filter="review" data-testid="risk-filter-review-btn" aria-pressed="false"><span class="filter-dot review"></span>Review <span data-risk-count="review" data-testid="risk-count-review">0</span></button><button class="risk-seg-btn safe" id="riskFilterSafeBtn" data-filter="safe" data-testid="risk-filter-safe-btn" aria-pressed="false"><span class="filter-dot safe"></span>Safe <span data-risk-count="safe" data-testid="risk-count-safe">0</span></button></div><span class="table-currency">All amounts in USD</span></div>
+        <div id="transactionsGrid" class="ag-theme-quartz custom-ag-grid" data-testid="transactions-grid"></div>
+        <div class="table-footer-note"><span><i class="fa-solid fa-shield-halved"></i> Risk threshold: 7.0 / 10</span><span>PayPal Orders v2</span></div>
+      </section>
 
-      <div class="kpi-card">
-        <div class="kpi-icon-wrapper red">
-          <i class="fa-solid fa-hand-holding-dollar"></i>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-title">Fraud Intercepted</span>
-          <h2 id="fraudIntercepted" class="kpi-value">$0.00</h2>
-          <span class="kpi-delta warning"><i class="fa-solid fa-shield-virus"></i> <span id="fraudAttacksCount">0 Attacks Mitigated</span></span>
-        </div>
-      </div>
+      <section id="bryntumSchedulerSection" class="grid-section hidden" data-testid="dispute-section"><div class="grid-card-header"><div class="grid-header-title"><h2>Response timeline</h2><span class="grid-subtitle">Sample schedule · October 2026</span></div><span class="badge badge-review">10-day response window</span></div><div id="bryntumSchedulerContainer" class="bryntum-scheduler-wrapper" data-testid="dispute-scheduler"></div></section>
 
-      <div class="kpi-card">
-        <div class="kpi-icon-wrapper green">
-          <i class="fa-solid fa-stopwatch-20"></i>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-title">Decision Latency (P90)</span>
-          <h2 id="avgLatency" class="kpi-value">—</h2>
-          <span class="kpi-delta positive"><i class="fa-solid fa-check"></i> <span id="latencyTrendLabel">Awaiting first decision</span></span>
-        </div>
-      </div>
-    </section>
+      <section id="simulationSection" class="action-bar-card hidden" data-testid="simulation-section"><div class="section-heading"><h2>Scenario library</h2><span class="badge badge-neutral">Sandbox only</span></div><div class="quick-sim-buttons"><button id="simNormalBtn" class="scenario-button" data-testid="simulate-normal-button"><i class="fa-solid fa-cart-shopping"></i><span><strong>Legitimate order</strong><small>Standard customer purchase</small></span><i class="fa-solid fa-arrow-right"></i></button><button id="simMediumBtn" class="scenario-button" data-testid="simulate-review-button"><i class="fa-regular fa-credit-card"></i><span><strong>Chargeback review</strong><small>Elevated payment risk</small></span><i class="fa-solid fa-arrow-right"></i></button><button id="simFraudBtn" class="scenario-button" data-testid="simulate-fraud-button"><i class="fa-solid fa-user-shield"></i><span><strong>Account takeover</strong><small>Compromised buyer account</small></span><i class="fa-solid fa-arrow-right"></i></button><button id="simTamperBtn" class="scenario-button" data-testid="simulate-tamper-button"><i class="fa-solid fa-tag"></i><span><strong>Price tampering</strong><small>Cart and market-price mismatch</small></span><i class="fa-solid fa-arrow-right"></i></button><button id="simVelocityBtn" class="scenario-button" data-testid="simulate-velocity-button"><i class="fa-solid fa-gauge-high"></i><span><strong>Card testing bot</strong><small>Automated transaction burst</small></span><i class="fa-solid fa-arrow-right"></i></button></div><div class="simulation-stream"><div><h3>Continuous simulation</h3><p>Sandbox scenarios · 6-second intervals</p></div><button id="toggleSentinelBtn" class="btn btn-secondary" data-testid="toggle-simulation-stream" aria-pressed="false"><i class="fa-solid fa-play"></i><span id="sentinelBtnText">Start stream</span></button></div><p id="simulationProgress" class="simulation-progress" data-testid="simulation-progress" role="status">No simulation running</p></section>
 
-    <!-- Simulation Control & Filter Bar -->
-    <section class="action-bar-card">
-      <div class="quick-sim-buttons">
-        <span class="bar-label"><i class="fa-solid fa-play"></i> Quick Scenarios:</span>
-        <button id="simNormalBtn" class="btn btn-outline-success">
-          <i class="fa-solid fa-cart-shopping"></i> Normal Order ($45.00)
-        </button>
-        <button id="simMediumBtn" class="btn btn-outline-warning">
-          <i class="fa-solid fa-laptop"></i> High-Value Order ($1,499.00)
-        </button>
-        <button id="simFraudBtn" class="btn btn-outline-danger">
-          <i class="fa-solid fa-user-ninja"></i> Account Takeover ($4,850.00)
-        </button>
-        <button id="simTamperBtn" class="btn btn-outline-danger">
-          <i class="fa-solid fa-tag"></i> Price Tampering ($149 vs $3,499)
-        </button>
-        <button id="simVelocityBtn" class="btn btn-outline-purple">
-          <i class="fa-solid fa-gauge-high"></i> Bot Burst ($1.28)
-        </button>
-        <button id="toggleSentinelBtn" class="btn btn-outline-primary">
-          <i class="fa-solid fa-tower-broadcast"></i> <span id="sentinelBtnText">Start Live Stream</span>
-        </button>
-      </div>
+      <section id="activitySection" class="agent-stream-section" data-testid="activity-section"><div class="terminal-card"><div class="terminal-header"><div class="terminal-title"><span class="tiny-dot"></span><h2>Activity log</h2><span class="activity-label">Current session</span></div><button id="clearLogsBtn" class="btn-text" data-testid="clear-logs-button"><i class="fa-regular fa-trash-can"></i> Clear log</button></div><div id="terminalLogs" class="terminal-body" data-testid="activity-log" role="log" aria-live="polite"></div></div></section>
 
-      <div class="grid-controls">
-        <div class="backend-status-tag" id="backendStatusTag">
-          <span class="status-dot green"></span> <span id="backendStatusText">Backend Online (Port 8085)</span>
-        </div>
-        <div class="search-input-wrapper">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="quickFilterInput" placeholder="Search Order ID, Payer Email, Payer ID, Risk Vector..." />
-          <button id="quickFilterClearBtn" class="search-clear-btn hidden" data-testid="quick-filter-clear-btn" title="Clear search"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <button id="exportCsvBtn" class="btn btn-secondary" title="Export AG Grid to CSV">
-          <i class="fa-solid fa-file-csv"></i> Export CSV
-        </button>
-      </div>
-    </section>
-
-    <!-- View Switcher Tabs (AG Grid Surveillance vs. Bryntum Dispute Horizon) -->
-    <div class="view-switcher-bar">
-      <button id="viewGridTabBtn" class="view-tab-btn active">
-        <i class="fa-solid fa-table-list"></i> AG Grid Real-Time Surveillance
-      </button>
-      <button id="viewSchedulerTabBtn" class="view-tab-btn">
-        <i class="fa-solid fa-calendar-days"></i> Bryntum Dispute Triage & Deadline Horizon
-      </button>
-    </div>
-
-    <!-- AG Grid Table Section -->
-    <section id="gridTableSection" class="grid-section">
-      <div class="grid-card-header">
-        <div class="grid-header-title">
-          <h3><i class="fa-solid fa-table-list"></i> Real-Time PayPal Transaction Surveillance</h3>
-          <span class="grid-subtitle">Powered by AG Grid Quartz Dark • Click any row to inspect the Gemini AI Case File</span>
-        </div>
-        <div class="grid-badge-legend">
-          <span class="legend-item"><span class="badge badge-safe">0.0 – 3.9 Safe</span></span>
-          <span class="legend-item"><span class="badge badge-review">4.0 – 6.9 Review</span></span>
-          <span class="legend-item"><span class="badge badge-fraud">7.0 – 10.0 Fraud Lock</span></span>
-        </div>
-      </div>
-
-      <!-- Segmented Risk Triage Filter -->
-      <div class="risk-filter-segment-bar" data-testid="risk-filter-bar">
-        <button class="risk-seg-btn active" id="riskFilterAllBtn" data-filter="all" data-testid="risk-filter-all-btn">All Transactions</button>
-        <button class="risk-seg-btn critical" id="riskFilterCriticalBtn" data-filter="critical" data-testid="risk-filter-critical-btn">Critical Risk (&ge;7.0)</button>
-        <button class="risk-seg-btn review" id="riskFilterReviewBtn" data-filter="review" data-testid="risk-filter-review-btn">Elevated Review (4.0&ndash;6.9)</button>
-        <button class="risk-seg-btn safe" id="riskFilterSafeBtn" data-filter="safe" data-testid="risk-filter-safe-btn">Approved Safe (&lt;4.0)</button>
-      </div>
-
-      <!-- AG Grid Mounting Node -->
-      <div id="transactionsGrid" class="ag-theme-quartz-dark custom-ag-grid"></div>
-    </section>
-
-    <!-- Bryntum Scheduler Section -->
-    <section id="bryntumSchedulerSection" class="grid-section hidden">
-      <div class="grid-card-header">
-        <div class="grid-header-title">
-          <h3><i class="fa-solid fa-calendar-days"></i> Bryntum Dispute Triage & 10-Day Response Horizon</h3>
-          <span class="grid-subtitle">Powered by Bryntum Scheduler Stockholm Dark • AI Swarm & Analyst Deadline Allocation</span>
-        </div>
-        <div class="grid-badge-legend">
-          <span class="legend-item"><span class="badge badge-safe">AI Telemetry</span></span>
-          <span class="legend-item"><span class="badge badge-review">10-Day Window Review</span></span>
-          <span class="legend-item"><span class="badge badge-fraud">PayPal Payments v2 Actuation</span></span>
-        </div>
-      </div>
-
-      <!-- Bryntum Scheduler Mounting Node -->
-      <div id="bryntumSchedulerContainer" class="bryntum-scheduler-wrapper"></div>
-    </section>
-
-    <!-- Bottom Split: Live Agent A2A Pipeline Stream -->
-    <section class="agent-stream-section">
-      <div class="terminal-card">
-        <div class="terminal-header">
-          <div class="terminal-dots">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-          </div>
-          <div class="terminal-title">
-            <i class="fa-solid fa-terminal"></i> AegisPay A2A Agent Communication Feed (JSON-RPC)
-          </div>
-          <button id="clearLogsBtn" class="btn-text"><i class="fa-solid fa-trash-can"></i> Clear</button>
-        </div>
-        <div id="terminalLogs" class="terminal-body">
-          <div class="log-entry system"><span class="timestamp">[12:00:00]</span> [SYSTEM] AegisPay Multi-Agent Swarm Initialized (Monitor, Orchestrator, Investigation, Actuator).</div>
-          <div class="log-entry monitor"><span class="timestamp">[12:00:01]</span> [TransactionMonitor] Polling active. Webhook listener connected to PayPal Developer Sandbox.</div>
-          <div class="log-entry orchestrator"><span class="timestamp">[12:00:02]</span> [Orchestrator] Ready for A2A tasks. Risk escalation threshold: 7.0 / 10.0.</div>
-        </div>
-      </div>
-    </section>
-
-  </main>
+      <section id="systemsSection" class="systems-section hidden" data-testid="systems-section"><div class="section-heading"><h2>Connected services</h2><span class="grid-subtitle">Configuration &amp; session status</span></div><div class="subsystem-telemetry-bar" data-testid="subsystem-telemetry-bar"><div class="sys-badge paypal" data-testid="telemetry-paypal"><i class="fa-brands fa-paypal"></i><span><strong>PayPal Commerce</strong><small>Orders &amp; payments</small></span><em>Sandbox</em></div><div class="sys-badge aggrid" data-testid="telemetry-aggrid"><i class="fa-solid fa-table-cells"></i><span><strong>AG Grid</strong><small>Transaction workspace</small></span><em>Enterprise · evaluation</em></div><div class="sys-badge bryntum" data-testid="telemetry-bryntum"><i class="fa-regular fa-calendar"></i><span><strong>Bryntum</strong><small>Dispute scheduling</small></span><em>Sample schedule</em></div><div class="sys-badge channel3" data-testid="telemetry-channel3"><i class="fa-solid fa-cube"></i><span><strong>Channel3</strong><small>Product intelligence</small></span><em>On demand</em></div><div class="sys-badge elastic" data-testid="telemetry-elastic"><i class="fa-solid fa-layer-group"></i><span><strong>Elasticsearch</strong><small>Threat intelligence</small></span><em>On demand</em></div><div class="sys-badge kernel" data-testid="telemetry-kernel"><i class="fa-regular fa-window-maximize"></i><span><strong>Kernel</strong><small>Browser evidence</small></span><em>Simulation fallback</em></div><div class="sys-badge zapier" data-testid="telemetry-zapier"><i class="fa-solid fa-bolt"></i><span><strong>Zapier MCP</strong><small>Incident response</small></span><em>On demand</em></div></div></section>
+      <footer class="workspace-footer"><div class="backend-status-tag" id="backendStatusTag" data-testid="backend-status"><span class="status-dot"></span><span id="backendStatusText" data-testid="backend-status-text">Connecting to event stream</span></div><span>AegisPay <span class="footer-separator">/</span> Fraud operations</span></footer>
+    </main>
+  </div>
 
   <!-- Side Drawer / Modal: Gemini AI Case File Inspector -->
-  <div id="caseFileDrawer" class="case-file-overlay hidden">
+  <div id="caseFileDrawer" class="case-file-overlay hidden" data-testid="case-file-drawer" role="dialog" aria-modal="true" aria-labelledby="modalOrderId">
     <div class="case-file-modal">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-eyebrow">AegisPay Fraud Case File</span>
+          <span class="modal-eyebrow">TRANSACTION CASE FILE</span>
           <h2 id="modalOrderId">Order #PP-2026-9812</h2>
         </div>
-        <button id="closeModalBtn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+        <button id="closeModalBtn" class="close-btn" aria-label="Close case file"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="modal-body">
+        <div id="caseDataSource" class="case-data-source" data-testid="case-data-source">Sample transaction</div>
         <!-- Top Metrics & Score Gauge -->
         <div class="case-score-card">
           <div class="score-dial-wrap">
@@ -374,7 +224,7 @@
               </div>
             </div>
             <div class="kernel-action-bar">
-              <a id="kernelReplayLink" href="https://app.onkernel.com/sessions/sess_demo" target="_blank" class="kernel-replay-btn">
+              <a id="kernelReplayLink" target="_blank" rel="noopener noreferrer" class="kernel-replay-btn">
                 <i class="fa-solid fa-play"></i> Watch 24fps Agent Session Replay
               </a>
               <span class="kernel-carrier-proof" id="kernelCarrierProof">
@@ -435,7 +285,7 @@
 
         <!-- AI Investigation Reasoning Section -->
         <div class="investigation-breakdown">
-          <h4><i class="fa-solid fa-brain"></i> Gemini 2.5 Flash Investigation Justification</h4>
+          <h4><i class="fa-solid fa-magnifying-glass"></i> Investigation summary</h4>
           <p id="modalJustification" class="justification-text">
             Loading investigation analysis...
           </p>
@@ -468,29 +318,30 @@
         </div>
       </div>
 
+      <div class="case-action-notice" data-testid="manual-action-notice">Manual payment actions are not connected in this workspace.</div>
       <div class="modal-footer">
-        <button id="modalActionRefundBtn" class="btn btn-danger">
-          <i class="fa-solid fa-rotate-left"></i> Execute PayPal Refund
+        <button id="modalActionRefundBtn" class="btn btn-secondary" disabled title="Manual refunds are not connected">
+          <i class="fa-solid fa-rotate-left"></i> Refund
         </button>
-        <button id="modalActionLockBtn" class="btn btn-warning">
-          <i class="fa-solid fa-lock"></i> Freeze PayPal User
+        <button id="modalActionLockBtn" class="btn btn-secondary" disabled title="Manual payment freezes are not connected">
+          <i class="fa-solid fa-lock"></i> Freeze
         </button>
         <button id="modalActionDismissBtn" class="btn btn-secondary">
-          <i class="fa-solid fa-check"></i> Mark as Safe
+          <i class="fa-solid fa-check"></i> Close review
         </button>
       </div>
     </div>
   </div>
 
   <!-- Custom Transaction Simulation Modal -->
-  <div id="customSimModal" class="case-file-overlay hidden">
+  <div id="customSimModal" class="case-file-overlay hidden" data-testid="custom-simulation-modal" role="dialog" aria-modal="true" aria-labelledby="customSimTitle">
     <div class="case-file-modal sim-form-modal">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-eyebrow">Interactive Testing</span>
-          <h2>Inject Custom PayPal Transaction</h2>
+          <span class="modal-eyebrow">SANDBOX WORKSPACE</span>
+          <h2 id="customSimTitle">New simulation</h2>
         </div>
-        <button id="closeSimModalBtn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+        <button id="closeSimModalBtn" class="close-btn" aria-label="Close simulation"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <form id="customTxForm" class="sim-form-body">
@@ -505,7 +356,7 @@
         <div class="form-row">
           <div class="form-group half">
             <label for="custAmount">Amount ($ USD)</label>
-            <input type="number" id="custAmount" required step="0.01" value="2400.00" />
+          <input type="number" id="custAmount" required min="0.01" max="999999999" step="0.01" value="2400.00" />
           </div>
           <div class="form-group half">
             <label for="custItem">Item Category</label>
@@ -524,7 +375,7 @@
 
         <div class="modal-footer form-footer">
           <button type="button" id="cancelSimModalBtn" class="btn btn-secondary">Cancel</button>
-          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Run AegisPay Multi-Agent Pipeline</button>
+          <button type="submit" class="btn btn-primary" data-testid="custom-simulation-submit"><i class="fa-solid fa-play"></i> Run simulation</button>
         </div>
       </form>
     </div>
@@ -538,5 +389,6 @@
 
   <!-- AegisPay Dashboard JS -->
   <script src="app.js"></script>
+  <script src="workspace.js"></script>
 </body>
 </html>

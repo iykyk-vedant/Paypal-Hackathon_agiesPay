@@ -1,0 +1,101 @@
+{
+  "project_context": {
+    "app_type": "B2B Fraud Operations & Real-Time Threat Surveillance Center",
+    "theme": "Light",
+    "design_archetype": "SWISS & HIGH-CONTRAST (Authority, Clarity, Truth)",
+    "core_directive": "Strict zero-hackathon policy. Remove 'AI-generated' aesthetic (no glowing blurs, muddy dark purples, or generic glassmorphism). The UI must feel like a production-grade, highly professional financial command center. Preserve all existing vanilla HTML/JS DOM IDs."
+  },
+  "typography": {
+    "fonts": {
+      "headings": "'Cabinet Grotesk', sans-serif",
+      "body": "'IBM Plex Sans', sans-serif",
+      "data_metrics_code": "'JetBrains Mono', monospace"
+    },
+    "guidelines": [
+      "BANNED: Do not use Inter or generic sans for headings.",
+      "Headings must use tight letter spacing (tracking-tight) for a premium technical feel.",
+      "Financial amounts, IDs, latency stats, and IPs MUST use JetBrains Mono for strict tabular alignment.",
+      "Update Google Fonts link in HTML to include Cabinet Grotesk, IBM Plex Sans, and JetBrains Mono."
+    ]
+  },
+  "colors": {
+    "theme": "Light Mode (High Contrast, Flat Solid)",
+    "tokens": {
+      "--bg-base": "#F8FAFC",
+      "--bg-surface": "#FFFFFF",
+      "--bg-card-hover": "#F1F5F9",
+      "--border-subtle": "#E2E8F0",
+      "--border-active": "#0F172A",
+      "--text-main": "#0F172A",
+      "--text-muted": "#475569",
+      "--text-dim": "#64748B",
+      "--paypal-blue": "#0070BA",
+      "--safe-green": "#059669",
+      "--safe-bg": "#ECFDF5",
+      "--safe-border": "#A7F3D0",
+      "--review-amber": "#D97706",
+      "--review-bg": "#FFFBEB",
+      "--review-border": "#FDE68A",
+      "--fraud-red": "#DC2626",
+      "--fraud-bg": "#FEF2F2",
+      "--fraud-border": "#FECACA",
+      "--ai-purple": "#6D28D9",
+      "--ai-purple-bg": "#F3E8FF"
+    },
+    "guidelines": [
+      "No full-screen gradients. The background must be a solid #F8FAFC.",
+      "Color is function only. The UI should be primarily monochrome (white/slate) with color used exclusively for status (Safe, Review, Fraud) and primary CTAs.",
+      "Text visibility is critical: Ensure all text over colored backgrounds meets APCA/WCAG AA contrast."
+    ]
+  },
+  "visual_enhancers": {
+    "surfaces": "Tactile & Crisp. Flat solid white backgrounds for all cards and modals.",
+    "borders": "Expose the skeleton. Use strict 1px solid borders (#E2E8F0) on cards. Eliminate muddy shadows.",
+    "shadows": "Minimal ambient shadow for elevation only: box-shadow: 0 1px 3px rgba(0,0,0,0.05). Use a stronger, crisp drop-shadow for the case drawer modal.",
+    "radii": "Keep it technical. Use --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px. Remove overly rounded bubbly elements."
+  },
+  "layouts": {
+    "dashboard_grid": "Mode B (High Density). Tight gap-16px. Strict grid hierarchy. KPI cards must align perfectly with the action bar and tables below.",
+    "case_drawer": "Treat the AI Case File like a formal financial audit document. White background, strict dividing lines, monospaced data grids, and stark typography. Remove sci-fi glowing dials; use a clean, high-contrast segmented gauge or simple bold typography.",
+    "guidelines": [
+      "Generous internal padding for cards (e.g., 20px-24px) to let data breathe.",
+      "Optical alignment: Ensure icons and text inside buttons/pills are visually centered."
+    ]
+  },
+  "components": {
+    "header": "Solid white background. 1px bottom border. No transparent or blurred glassmorphism.",
+    "kpi_cards": "Flat white surface, sharp 1px border. Icon wrappers should use subtle tinted backgrounds without heavy glows. Flash animations on update should be a subtle background pulse, not a neon text color change.",
+    "buttons": "Professional pill-shaped or slightly rounded (4px) buttons. Primary CTA uses PayPal Blue. Hover states must have explicitly higher contrast.",
+    "status_pills": "Flat design. Eliminate 'heartbeat' pulse animations that look like a hackathon. Use a solid, steady indicator.",
+    "telemetry_bar": "Make the subsystem badges look like enterprise tags (light grey background, dark grey text, subtle 1px border) instead of glowing cyber-pills.",
+    "ag_grid": "CRITICAL: Change AG Grid theme. In HTML, load 'ag-theme-quartz.css' (remove dark). Remove 'ag-theme-quartz-dark' class from the mounting div and replace with 'ag-theme-quartz'. Overwrite custom AG Grid CSS variables to match the light theme tokens.",
+    "bryntum_scheduler": "CRITICAL: Change Bryntum theme. In HTML, load 'stockholm.css' (remove stockholm-dark).",
+    "terminal": "Terminal logs should be embedded with a clean technical aesthetic. Dark slate background (#0F172A) is acceptable here *only* to distinguish it as a raw console, but frame it within a crisp white card wrapper."
+  },
+  "accessibility": {
+    "guidelines": [
+      "Hover states must be explicitly defined (background and text color).",
+      "Focus rings should use --border-active with a 2px offset.",
+      "All interactive elements must retain their 'data-testid' attributes."
+    ]
+  },
+  "instructions_to_main_agent": [
+    "1. You are modifying EXISTING vanilla HTML/CSS. DO NOT migrate this to React or Shadcn.",
+    "2. DO NOT alter `app.js` or `bryntum-scheduler.js` logic. Ensure all `id=` attributes in HTML remain exactly the same so JavaScript bindings do not break.",
+    "3. Rewrite `style.css` entirely based on these light-theme Swiss Brutalist tokens.",
+    "4. In `index.html`, update the AG Grid CSS CDN links to `ag-theme-quartz.css` (remove dark version).",
+    "5. In `index.html`, update the AG Grid div class to `ag-theme-quartz`.",
+    "6. In `index.html`, update the Bryntum CSS link to `stockholm.css` (remove dark version).",
+    "7. Re-style the Gemini Case File Drawer to look like an official, printable PDF or enterprise case report (white background, strict borders, monospace data points) instead of a sci-fi hacker panel.",
+    "8. Remove overly 'AI-generated' aesthetics like .heartbeat pulse animations, neon shadows, and dark gradient backgrounds.",
+    "9. Retain all FontAwesome icons but ensure they contrast properly against the new light backgrounds."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic outputs ('AI slop'). Avoid this by strictly adhering to the SWISS HIGH-CONTRAST archetype provided.",
+    "Create depth through layered design elements with z-index hierarchy and crisp 1px borders, NOT muddy drop shadows.",
+    "Never center align the app container; left-align data for financial readability.",
+    "Never use AI assistant Emoji characters. Use the existing FontAwesome icons.",
+    "Use 2-3x more spacing (padding/margins) inside cards than feels comfortable to create an enterprise 'breathing room' effect.",
+    "Ensure all text over colored backgrounds meets APCA/WCAG AA contrast."
+  ]
+}

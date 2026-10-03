@@ -9,26 +9,26 @@ let bryntumSchedulerInstance = null;
 
 // Initial Dispute & Mitigation Pipeline Events (October 2026)
 const INITIAL_RESOURCES = [
-  { id: 'ai-gemini', name: '🤖 Gemini 2.5 Flash Agent', role: 'Autonomous AI Risk Engine' },
-  { id: 'actuator', name: '🛡️ Actuator Mitigation Officer', role: 'PayPal Payments v2 Engine' },
-  { id: 'analyst-marcus', name: '👤 Marcus (Fraud Analyst)', role: 'Tier 1 Review' },
-  { id: 'analyst-elena', name: '⚖️ Elena (Dispute Lead)', role: 'Chargeback Arbitration' }
+  { id: 'ai-gemini', name: 'Investigation agent', role: 'Risk evaluation' },
+  { id: 'actuator', name: 'Payment response', role: 'PayPal Payments v2' },
+  { id: 'analyst-marcus', name: 'Marcus', role: 'Fraud analyst' },
+  { id: 'analyst-elena', name: 'Elena', role: 'Dispute lead' }
 ];
 
 const INITIAL_EVENTS = [
   {
     id: 'disp-01',
     resourceId: 'actuator',
-    name: '⚡ Void Authorization #PP-2026-9815 (Bot Burst $1.28)',
+    name: 'Void authorization · PP-2026-9815',
     startDate: '2026-10-02 08:30',
     endDate: '2026-10-02 14:00',
-    eventColor: 'purple',
+    eventColor: 'red',
     iconCls: 'fa-solid fa-bolt'
   },
   {
     id: 'disp-02',
     resourceId: 'actuator',
-    name: '⚡ Refund Capture #PP-2026-9812 (Account Takeover $4,850)',
+    name: 'Refund capture · PP-2026-9812',
     startDate: '2026-10-02 11:00',
     endDate: '2026-10-02 18:00',
     eventColor: 'red',
@@ -37,7 +37,7 @@ const INITIAL_EVENTS = [
   {
     id: 'disp-03',
     resourceId: 'ai-gemini',
-    name: '🧠 Gemini APIMatic Context Ingestion & Signal Mapping',
+    name: 'Evidence ingestion & signal mapping',
     startDate: '2026-10-01 00:00',
     endDate: '2026-10-05 23:59',
     eventColor: 'teal',
@@ -46,7 +46,7 @@ const INITIAL_EVENTS = [
   {
     id: 'disp-04',
     resourceId: 'analyst-marcus',
-    name: '🔍 Manual Order Review #PP-2026-9811 ($1,499 Electronics)',
+    name: 'Order review · PP-2026-9811',
     startDate: '2026-10-03 09:00',
     endDate: '2026-10-04 18:00',
     eventColor: 'orange',
@@ -55,7 +55,7 @@ const INITIAL_EVENTS = [
   {
     id: 'disp-05',
     resourceId: 'analyst-elena',
-    name: '⏳ PayPal Dispute Evidence Filing #DISP-9811 (10-Day Window)',
+    name: 'Dispute evidence filing · DISP-9811',
     startDate: '2026-10-03 12:00',
     endDate: '2026-10-12 17:00',
     eventColor: 'blue',
@@ -64,7 +64,7 @@ const INITIAL_EVENTS = [
   {
     id: 'disp-06',
     resourceId: 'analyst-marcus',
-    name: '📋 Evidence Assembled — Channel3 FMV + KERNEL DOM Audit Bundle',
+    name: 'Evidence assembled · Product & browser audit',
     startDate: '2026-10-03 12:00',
     endDate: '2026-10-05 17:00',
     eventColor: 'teal',
@@ -73,7 +73,7 @@ const INITIAL_EVENTS = [
   {
     id: 'disp-07',
     resourceId: 'analyst-elena',
-    name: '🧑‍💼 Merchant Ops Review — Dispute Package Sign-off',
+    name: 'Merchant review · Evidence sign-off',
     startDate: '2026-10-05 17:00',
     endDate: '2026-10-08 17:00',
     eventColor: 'orange',
@@ -82,7 +82,7 @@ const INITIAL_EVENTS = [
   {
     id: 'disp-08',
     resourceId: 'analyst-elena',
-    name: '🚩 PayPal Resolution Center SLA Deadline (10-Day Response Window)',
+    name: 'Resolution deadline · 10-day response window',
     startDate: '2026-10-08 17:00',
     endDate: '2026-10-13 17:00',
     eventColor: 'red',
@@ -105,17 +105,19 @@ export function initBryntumScheduler() {
       eventStyle: 'colored',
       fillTicks: true,
       snap: true,
+      readOnly: true,
 
       columns: [
         {
-          text: 'Swarm / Defense Resource',
+          text: 'Assigned to',
           field: 'name',
-          width: 250,
+          width: 205,
+          minWidth: 110,
           htmlEncode: false,
           renderer: ({ record }) => `
             <div style="display:flex; flex-direction:column; gap:2px;">
-              <span style="font-weight:600; color:#F8FAFC;">${record.name}</span>
-              <span style="font-size:11px; color:#94A3B8;">${record.role || 'Resolution Unit'}</span>
+              <span class="scheduler-resource-name">${record.name}</span>
+              <span class="scheduler-resource-role">${record.role || 'Resolution unit'}</span>
             </div>
           `
         }
@@ -128,13 +130,10 @@ export function initBryntumScheduler() {
       features: {
         eventTooltip: {
           template: ({ eventRecord }) => `
-            <div style="padding: 10px; font-family: Inter, sans-serif; font-size: 13px; line-height: 1.5; color: #fff;">
-              <strong style="color: #38BDF8; display: block; margin-bottom: 4px;">${eventRecord.name}</strong>
+            <div class="scheduler-tooltip">
+              <strong>${String(eventRecord.name).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</strong>
               <div><strong>Start:</strong> ${eventRecord.startDate.toLocaleDateString()}</div>
               <div><strong>Deadline / End:</strong> ${eventRecord.endDate.toLocaleDateString()}</div>
-              <div style="margin-top: 6px; font-size: 11px; color: #94A3B8;">
-                Managed via AegisPay A2A Swarm & PayPal Developer API
-              </div>
             </div>
           `
         }
@@ -142,7 +141,7 @@ export function initBryntumScheduler() {
     });
 
     window.bryntumScheduler = bryntumSchedulerInstance;
-    console.log('[Bryntum] Scheduler initialized successfully with Stockholm Dark theme.');
+    console.log('[Bryntum] Light dispute timeline initialized.');
   } catch (err) {
     console.error('[Bryntum] Error initializing scheduler:', err);
   }
@@ -160,7 +159,7 @@ window.addDisputeToBryntumScheduler = function(orderId, amount, riskScore, statu
   const newEvent = {
     id: `ev-live-${Date.now()}`,
     resourceId: targetResource,
-    name: `🚨 #${orderId} ($${amount.toFixed(2)}) — ${actionLabel}`,
+    name: `${orderId} ($${amount.toFixed(2)}) · ${actionLabel}`,
     startDate: now,
     endDate: new Date(now.getTime() + (riskScore >= 7.0 ? 8 : 72) * 3600 * 1000), // hours
     eventColor: color

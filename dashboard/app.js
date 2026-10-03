@@ -15,6 +15,13 @@ let gridApi;
 // Currently open case file transaction (for Dispute Evidence Package generation)
 let currentOpenTx = null;
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+
+const receivedSessions = new Set();
+let scenarioInFlight = false;
+
 // Initial Realistic PayPal Transaction Data (Orders v2 schema-grounded)
 const INITIAL_TRANSACTIONS = [
   {
@@ -279,30 +286,35 @@ const columnDefs = [
     field: "timestamp",
     width: 120,
     sortable: true,
-    cellStyle: { fontFamily: "'JetBrains Mono', monospace", color: "#94A3B8" }
+    minWidth: 85,
+    cellStyle: { fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: "#8c979e" }
   },
   {
     headerName: "Order ID",
     field: "orderId",
     width: 150,
+    minWidth: 130,
     sortable: true,
     filter: "agTextColumnFilter",
     cellRenderer: (params) => {
-      return `<span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #38BDF8;">#${params.value}</span>`;
+      return `<span class="cell-order">${escapeHtml(params.value)}</span>`;
     }
   },
   {
     headerName: "Customer",
     field: "customer",
     width: 200,
+    minWidth: 100,
+    flex: 1.7,
     getQuickFilterText: (params) => `${params.data.customer} ${params.data.email || ""} ${params.data.account || ""}`,
     cellRenderer: (params) => {
-      const email = params.data.email || "paypal-customer@sandbox.com";
+      const email = params.data.email || "—";
+      const initials = String(params.value || '').split(/\s+/).slice(0, 2).map(part => part[0]).join('');
       return `
-        <div style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
-          <span style="font-weight: 600; color: #F8FAFC; line-height: 1.2;">${params.value}</span>
-          <span style="font-size: 11px; color: #64748B;">${email}</span>
-        </div>
+        <div class="customer-cell"><span class="customer-avatar" aria-hidden="true">${escapeHtml(initials)}</span><span class="customer-text">
+          <span class="customer-name">${escapeHtml(params.value)}</span>
+          <span class="customer-email">${escapeHtml(email)}</span>
+        </span></div>
       `;
     }
   },
@@ -310,30 +322,33 @@ const columnDefs = [
     headerName: "Amount",
     field: "amount",
     width: 140,
+    minWidth: 85,
     sortable: true,
     comparator: (valueA, valueB) => valueA - valueB,
     cellRenderer: (params) => {
       const formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(params.value);
-      return `<span style="font-weight: 700; color: #F8FAFC;">${formatted}</span>`;
+      return `<span class="cell-amount">${formatted}</span>`;
     }
   },
   {
     headerName: "Category",
     field: "category",
     width: 180,
+    minWidth: 140,
     filter: "agSetColumnFilter",
-    cellStyle: { color: "#CBD5E1" }
+    cellStyle: { color: "#859198", fontSize: '11px' }
   },
   {
     headerName: "Risk Score",
     field: "riskScore",
     width: 150,
+    minWidth: 62,
     sortable: true,
     getQuickFilterText: (params) => `${params.data.riskScore} ${(params.data.factors || []).join(" ")}`,
     cellRenderer: (params) => {
       const score = Number(params.value);
       let tierClass = "safe";
-      let icon = "fa-shield-check";
+      let icon = "fa-check";
       let label = "Safe";
 
       if (score >= 7.0) {
@@ -350,7 +365,7 @@ const columnDefs = [
         <div class="risk-score-cell">
           <span class="risk-pill ${tierClass}">
             <i class="fa-solid ${icon}"></i> ${score.toFixed(1)}
-          </span>
+          </span><span class="risk-label">${label}</span>
         </div>
       `;
     }
@@ -359,6 +374,7 @@ const columnDefs = [
     headerName: "Status",
     field: "status",
     width: 190,
+    minWidth: 148,
     filter: "agSetColumnFilter",
     cellRenderer: (params) => {
       const val = params.value || "Approved";
@@ -368,7 +384,7 @@ const columnDefs = [
       if (val.includes("Refunded")) {
         badgeClass = "refunded";
         icon = "fa-rotate-left";
-      } else if (val.includes("Locked")) {
+      } else if (val.includes("Locked") || val.includes("Void")) {
         badgeClass = "locked";
         icon = "fa-lock";
       } else if (val.includes("Review")) {
@@ -379,24 +395,29 @@ const columnDefs = [
       return `
         <div class="status-cell">
           <span class="status-badge ${badgeClass}">
-            <i class="fa-solid ${icon}"></i> ${val}
+            <i class="fa-solid ${icon}"></i> ${escapeHtml(val.replace('Auto-Refunded (PayPal)', 'Refunded').replace('Account Locked', 'Blocked').replace('Under Review', 'Under review'))}
           </span>
         </div>
       `;
     }
   },
   {
-    headerName: "Case File",
+    headerName: "",
     field: "id",
-    width: 130,
+    width: 60,
+    minWidth: 40,
+    maxWidth: 68,
     sortable: false,
     filter: false,
     cellRenderer: (params) => {
-      return `
-        <button class="grid-action-btn" onclick="openCaseFileById('${params.value}')">
-          <i class="fa-solid fa-file-magnifying-glass"></i> Inspect
-        </button>
-      `;
+      const button = document.createElement('button');
+      button.className = 'grid-action-btn';
+      button.dataset.testid = `inspect-case-${params.value}`;
+      button.title = `Inspect ${params.data.orderId}`;
+      button.setAttribute('aria-label', `Inspect ${params.data.orderId}`);
+      button.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i>';
+      button.addEventListener('click', event => { event.stopPropagation(); openCaseFile(params.data); });
+      return button;
     }
   }
 ];
@@ -410,32 +431,25 @@ const gridOptions = {
   rowData: rowDataStore,
   defaultColDef: {
     flex: 1,
-    minWidth: 110,
+    minWidth: 80,
     resizable: true,
     sortable: true,
     filter: true,
     enableRowGroup: true,
     enableValue: true
   },
-  enableRangeSelection: true,
-  rowGroupPanelShow: "always",
-  sideBar: {
-    toolPanels: ["columns", "filters"],
-    defaultToolPanel: ""
-  },
-  statusBar: {
-    statusPanels: [
-      { statusPanel: "agTotalRowCountComponent", align: "left" },
-      { statusPanel: "agFilteredRowCountComponent", align: "left" },
-      { statusPanel: "agSelectedRowCountComponent", align: "left" }
-    ]
-  },
+  rowGroupPanelShow: "onlyWhenGrouping",
+  sideBar: false,
   animateRows: true,
-  rowSelection: "single",
-  rowHeight: 52,
-  headerHeight: 46,
+  rowSelection: { mode: 'singleRow', checkboxes: false, enableClickSelection: true },
+  rowHeight: 58,
+  headerHeight: 42,
   pagination: true,
   paginationPageSize: 10,
+  paginationPageSizeSelector: [10, 25, 50],
+  overlayNoRowsTemplate: '<span data-testid="transaction-empty-state">No transactions match your filters.</span>',
+  onFilterChanged: () => window.updateWorkspaceCounts?.(),
+  onModelUpdated: () => window.updateWorkspaceCounts?.(),
   isExternalFilterPresent: () => currentRiskFilter !== "all",
   doesExternalFilterPass: (node) => {
     const score = node.data.riskScore;
@@ -460,6 +474,7 @@ const gridOptions = {
    Live Row Insertion Helper (Green/Red Glow Animation)
    -------------------------------------------------------------------------- */
 function insertRowWithGlow(row) {
+  rowDataStore.unshift(row);
   row._justAdded = true;
   row._flashType = row.riskScore >= 7.0 ? "fraud" : "safe";
   if (!gridApi) return;
@@ -507,7 +522,8 @@ function initSSEConnection() {
 
     sseConnection.onopen = () => {
       if (statusTag) statusTag.classList.remove("offline");
-      if (statusText) statusText.innerText = "Backend Live (Port 8085)";
+      if (statusText) statusText.innerText = "Event stream connected";
+      setConnectionStatus(true);
       logTerminal("[SYSTEM] Connected to live AegisPay Multi-Agent SSE stream.", "system");
     };
 
@@ -522,15 +538,21 @@ function initSSEConnection() {
 
     sseConnection.onerror = () => {
       if (statusTag) statusTag.classList.add("offline");
-      if (statusText) statusText.innerText = "Backend Offline (Local Mode)";
+      if (statusText) statusText.innerText = "Event stream reconnecting";
+      setConnectionStatus(false);
     };
   } catch (err) {
     if (statusTag) statusTag.classList.add("offline");
-    if (statusText) statusText.innerText = "Backend Offline (Local Mode)";
+    if (statusText) statusText.innerText = "Event stream unavailable";
+    setConnectionStatus(false);
   }
 }
 
 function handleIncomingBackendEvent(data) {
+  if (!data.order_id) return;
+  const sessionKey = data.session_id || data.order_id;
+  if (receivedSessions.has(sessionKey)) return;
+  receivedSessions.add(sessionKey);
   if (pendingScenarioStart !== null) {
     recordDecisionLatency(performance.now() - pendingScenarioStart);
     pendingScenarioStart = null;
@@ -561,12 +583,12 @@ function handleIncomingBackendEvent(data) {
   // Log steps to terminal
   logTerminal(`[PayPal Stream] Ingested order ${orderId} (${customerName}, $${amount.toFixed(2)} USD).`, "monitor");
   setTimeout(() => {
-    logTerminal(`[Orchestrator] Dispatched to InvestigationAgent. Gemini 2.5 Flash Risk Score: ${riskScore.toFixed(1)}/10.0.`, "investigation");
+    logTerminal(`[Investigation] Order ${orderId} evaluated. Risk score: ${riskScore.toFixed(1)}/10.`, "investigation");
   }, 300);
 
   if (shouldActuate) {
     setTimeout(() => {
-      logTerminal(`[ActuatorAgent] Risk >= 7.0! Executed PayPal Payments v2 ${data.actuator_result?.action || 'refund_capture'} on ${orderId}.`, "actuator");
+      logTerminal(`[Actuator] ${orderId}: ${data.actuator_result?.action || 'Mitigation requested'} · ${data.actuator_result?.status || 'See case receipt for result'}.`, "actuator");
     }, 600);
   }
 
@@ -620,18 +642,37 @@ function handleIncomingBackendEvent(data) {
   }
 }
 
-async function triggerBackendScenario(scenarioName, fallbackFn) {
+function setConnectionStatus(connected) {
+  const pill = document.getElementById('liveStatusPill');
+  pill.classList.toggle('offline', !connected);
+  pill.querySelector('.status-label').textContent = connected ? 'Stream connected' : 'Reconnecting';
+}
+
+async function triggerBackendScenario(scenarioName) {
+  if (scenarioInFlight) return;
+  scenarioInFlight = true;
+  const buttons = document.querySelectorAll('.scenario-button');
+  buttons.forEach(button => { button.disabled = true; });
+  const progress = document.getElementById('simulationProgress');
+  progress.textContent = 'Evaluating scenario…';
   pendingScenarioStart = performance.now();
   try {
     const res = await fetch(`${BACKEND_URL}/simulate-scenario/${scenarioName}`, { method: "POST" });
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }
-    // Event will arrive via SSE stream automatically!
+    const result = await res.json();
+    handleIncomingBackendEvent(result);
+    progress.textContent = 'Scenario complete. Transaction added to the overview.';
+    showToast('Scenario complete. Transaction added.');
   } catch (err) {
-    console.warn(`Backend call failed (${err.message}), using client-side fallback.`);
     pendingScenarioStart = null;
-    if (fallbackFn) fallbackFn();
+    progress.textContent = 'Scenario failed. Please try again.';
+    showToast('Unable to complete the scenario. Please try again.');
+    logTerminal(`Scenario ${scenarioName} failed: ${err.message}`, 'system');
+  } finally {
+    scenarioInFlight = false;
+    buttons.forEach(button => { button.disabled = false; });
   }
 }
 
@@ -702,6 +743,7 @@ function setupEventListeners() {
       currentRiskFilter = key;
       Object.values(riskFilterBtns).forEach((b) => b && b.classList.remove("active"));
       btn.classList.add("active");
+      Object.values(riskFilterBtns).forEach(b => b?.setAttribute('aria-pressed', String(b === btn)));
       if (gridApi) gridApi.onFilterChanged();
       logTerminal(`[SYSTEM] Risk triage filter set to: ${key.toUpperCase()}.`, "system");
     });
@@ -711,8 +753,11 @@ function setupEventListeners() {
   document.getElementById("exportCsvBtn").addEventListener("click", () => {
     if (gridApi) {
       gridApi.exportDataAsCsv({
-        fileName: `AegisPay_Fraud_Surveillance_${new Date().toISOString().slice(0, 10)}.csv`
+        fileName: `AegisPay_Fraud_Surveillance_${new Date().toISOString().slice(0, 10)}.csv`,
+        columnKeys: ['timestamp', 'orderId', 'customer', 'amount', 'category', 'riskScore', 'status'],
+        processCellCallback: params => /^[=+@\-\t\r]/.test(String(params.value ?? '')) ? `'${params.value}` : params.value
       });
+      showToast('Transaction export downloaded.');
       logTerminal("AG Grid transaction surveillance data exported to CSV.", "system");
     }
   });
@@ -739,7 +784,7 @@ function setupEventListeners() {
   const simTamperBtn = document.getElementById("simTamperBtn");
   if (simTamperBtn) {
     simTamperBtn.addEventListener("click", () => {
-      triggerBackendScenario("price_tampering", () => {
+      triggerBackendScenario("cart_tampering", () => {
         simulatePriceTamperingFallback();
       });
     });
@@ -758,7 +803,8 @@ function setupEventListeners() {
     toggleSentinelBtn.addEventListener("click", () => {
       isSentinelRunning = !isSentinelRunning;
       if (isSentinelRunning) {
-        sentinelBtnText.innerText = "Stop Live Stream";
+        sentinelBtnText.innerText = "Stop stream";
+        toggleSentinelBtn.setAttribute('aria-pressed', 'true');
         toggleSentinelBtn.classList.remove("btn-outline-primary");
         toggleSentinelBtn.classList.add("btn-outline-danger");
         logTerminal("[SENTINEL] Live commerce stream activated (6s intervals).", "monitor");
@@ -768,7 +814,8 @@ function setupEventListeners() {
           triggerBackendScenario(pick);
         }, 6000);
       } else {
-        sentinelBtnText.innerText = "Start Live Stream";
+        sentinelBtnText.innerText = "Start stream";
+        toggleSentinelBtn.setAttribute('aria-pressed', 'false');
         toggleSentinelBtn.classList.remove("btn-outline-danger");
         toggleSentinelBtn.classList.add("btn-outline-primary");
         if (sentinelInterval) clearInterval(sentinelInterval);
@@ -815,33 +862,32 @@ function setupEventListeners() {
       ]
     };
 
+    const submitButton = e.target.querySelector('[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Evaluating…';
     try {
       pendingScenarioStart = performance.now();
-      await fetch(`${BACKEND_URL}/process-transaction`, {
+      const response = await fetch(`${BACKEND_URL}/process-transaction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(customPayload)
       });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      handleIncomingBackendEvent(await response.json());
+      customModal.classList.add('hidden');
+      showToast('Simulation complete. Transaction added.');
     } catch (err) {
       pendingScenarioStart = null;
-      simulateTransaction(name, amount, category, `Custom transaction from ${location}`, amount > 2000 ? 8.8 : 2.1, amount > 2000 ? "Auto-Refunded (PayPal)" : "Approved");
+      showToast('Simulation failed. Your details are preserved; please try again.');
+    } finally {
+      submitButton.disabled = false;
+      submitButton.innerHTML = '<i class="fa-solid fa-play"></i> Run simulation';
     }
-    customModal.classList.add("hidden");
   });
 
   // Case File Modal Controls
   document.getElementById("closeModalBtn").addEventListener("click", closeCaseFileModal);
   document.getElementById("modalActionDismissBtn").addEventListener("click", closeCaseFileModal);
-
-  document.getElementById("modalActionRefundBtn").addEventListener("click", () => {
-    alert("PayPal API Invocation: POST /v2/payments/captures/refund executed successfully. Transaction marked as refunded.");
-    closeCaseFileModal();
-  });
-
-  document.getElementById("modalActionLockBtn").addEventListener("click", () => {
-    alert("AegisPay Actuator: Payment authorization voided on PayPal.");
-    closeCaseFileModal();
-  });
 
   document.getElementById("clearLogsBtn").addEventListener("click", () => {
     document.getElementById("terminalLogs").innerHTML = "";
@@ -849,18 +895,14 @@ function setupEventListeners() {
 
   document.getElementById("copyJsonBtn").addEventListener("click", () => {
     const jsonText = document.getElementById("modalRawJson").textContent;
-    navigator.clipboard.writeText(jsonText).then(() => {
-      alert("Case File JSON copied to clipboard!");
-    });
+    copyWorkspaceText(jsonText, 'Case JSON copied.');
   });
 
   // Dispute Evidence Package Generator
   document.getElementById("copyDisputeBriefBtn").addEventListener("click", () => {
     if (!currentOpenTx) return;
     const markdown = generateDisputeEvidencePackage(currentOpenTx);
-    navigator.clipboard.writeText(markdown).then(() => {
-      showToast("PayPal Resolution Center dispute package copied to clipboard!");
-    });
+    copyWorkspaceText(markdown, 'Dispute evidence package copied.');
   });
 }
 
@@ -1146,7 +1188,7 @@ function updateKpiDisplay() {
   volEl.innerText = volFormatted;
   txEl.innerText = kpiState.totalTransactions.toLocaleString();
   fraudEl.innerText = fraudFormatted;
-  if (attacksEl) attacksEl.innerText = `${kpiState.attacksCount} Attack${kpiState.attacksCount === 1 ? "" : "s"} Mitigated`;
+  if (attacksEl) attacksEl.innerText = `${kpiState.attacksCount} high-risk transaction${kpiState.attacksCount === 1 ? "" : "s"}`;
 
   const p90 = computeP90Latency(kpiState.latencySamples);
   if (latencyEl) latencyEl.innerText = p90 !== null ? `${(p90 / 1000).toFixed(2)}s` : "—";
@@ -1168,9 +1210,20 @@ function showToast(message) {
   }
   const toast = document.createElement("div");
   toast.className = "aegis-toast";
-  toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${message}`;
+  toast.setAttribute('role', 'status');
+  toast.dataset.testid = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${escapeHtml(message)}`;
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
+}
+
+async function copyWorkspaceText(text, successMessage) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(successMessage);
+  } catch {
+    showToast('Clipboard unavailable. Check clipboard permission and try again.');
+  }
 }
 
 function generateDisputeEvidencePackage(tx) {
@@ -1220,7 +1273,8 @@ function generateDisputeEvidencePackage(tx) {
 - Twilio Buyer Alert: ${zActions.buyer_sms?.status || "N/A"}
 - Zendesk Case ID: ${zActions.zendesk?.ticket_id || "N/A"}
 
-### 6. Gemini 2.5 Flash Investigation Justification
+### 6. Investigation Justification
+Source: ${tx.rawJson?.session_id ? 'Sandbox pipeline; see raw receipts for provider mode' : 'Sample transaction (not a live payment)'}
 ${tx.justification}
 `;
 }
@@ -1230,8 +1284,9 @@ function logTerminal(message, type = "system") {
   const time = new Date().toTimeString().split(" ")[0];
   const div = document.createElement("div");
   div.className = `log-entry ${type}`;
-  div.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`;
+  div.innerHTML = `<span class="timestamp">${time}</span> ${escapeHtml(message)}`;
   terminal.appendChild(div);
+  while (terminal.children.length > 200) terminal.firstChild.remove();
   terminal.scrollTop = terminal.scrollHeight;
 }
 
@@ -1252,6 +1307,9 @@ window.openCaseFileById = function(txId) {
 
 function openCaseFile(tx) {
   currentOpenTx = tx;
+  document.getElementById('caseDataSource').textContent = tx.rawJson?.session_id
+    ? 'Sandbox pipeline · Provider results may include simulation fallbacks.'
+    : 'Sample transaction · Not a live payment or verified investigation.';
   document.getElementById("modalOrderId").innerText = `Order #${tx.orderId}`;
   document.getElementById("modalCustomerName").innerText = tx.customer;
   document.getElementById("modalAccountId").innerText = tx.account;
@@ -1330,7 +1388,7 @@ function openCaseFile(tx) {
         (elData.matched_indicators || []).forEach(ind => {
           const pill = document.createElement("span");
           pill.className = "elastic-ind-pill";
-          pill.innerHTML = `<i class="fa-solid fa-tag"></i> ${ind}`;
+          pill.innerHTML = `<i class="fa-solid fa-tag"></i> ${escapeHtml(ind)}`;
           indGrid.appendChild(pill);
         });
       }
@@ -1398,7 +1456,12 @@ function openCaseFile(tx) {
 
       const replayLink = document.getElementById("kernelReplayLink");
       if (replayLink) {
-        replayLink.href = kData.session_replay_url || `https://app.onkernel.com/sessions/${kData.session_id || 'demo'}`;
+        const replayUrl = kData.session_replay_url;
+        const validReplay = /^https:\/\//.test(replayUrl || '') && !kData.simulated && !String(kData.session_id || '').includes('sim');
+        if (validReplay) replayLink.href = replayUrl;
+        else replayLink.removeAttribute('href');
+        replayLink.setAttribute('aria-disabled', String(!validReplay));
+        replayLink.title = validReplay ? 'Open browser session replay' : 'Replay unavailable for simulated evidence';
       }
     } else {
       kernelSection.classList.add("hidden");
@@ -1447,7 +1510,7 @@ function openCaseFile(tx) {
   (tx.factors || []).forEach(f => {
     const pill = document.createElement("span");
     pill.className = `factor-pill ${tx.riskScore >= 7.0 ? 'danger' : 'safe'}`;
-    pill.innerHTML = `<i class="fa-solid fa-tag"></i> ${f}`;
+    pill.innerHTML = `<i class="fa-solid fa-tag"></i> ${escapeHtml(f)}`;
     factorsContainer.appendChild(pill);
   });
 

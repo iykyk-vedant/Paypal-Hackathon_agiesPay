@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-03",
+  "previous_report": "/app/test_reports/iteration_1.json",
+  "backend": {"passed": 7, "failed": 0, "report": "/app/test_reports/pytest/pytest_results_after_fixes.xml"},
+  "resolved": [
+    "Missing platform backend entrypoint restored; kernel and zapier /api health endpoints return 200.",
+    "Zero-result search shows explicit empty-state overlay; clearing restores all six rows.",
+    "AG Grid initial-only page-size mutation removed; deprecated row-selection option modernized.",
+    "Explicit Bryntum Svalbard Light theme linked; readable event colours and desktop resource width verified."
+  ],
+  "sort_finding": "False positive in initial report: visual row index order, not DOM insertion order, is authoritative. Browser verified actual asc [42.5,185,890,1499,3200,4850] and desc reverse.",
+  "preserved_verified_flows": ["risk filters", "responsive navigation", "case drawer", "clipboard", "filtered CSV", "custom simulation with SSE deduplication", "activity log", "light scheduler"],
+  "limitations": ["Sample initial transactions and scheduler", "Kernel high_fidelity_simulation", "Gemini currently heuristic", "Manual refund/freeze intentionally unavailable", "AG Grid invalid evaluation license and Bryntum trial"]
+}
